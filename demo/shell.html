@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#5B6CFF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Talk Buddy">
+<meta name="description" content="Talk Buddy - AI destekli konusma arkadasi. Calisan demo.">
+<title>Talk Buddy — Çalışan Demo (Beta 0.9.0)</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23EEF0FF'/><circle cx='32' cy='32' r='21' fill='%235B6CFF'/><circle cx='25' cy='28' r='4' fill='%23fff'/><circle cx='39' cy='28' r='4' fill='%23fff'/><path d='M24 40q8 7 16 0' stroke='%2313172B' stroke-width='3' fill='none' stroke-linecap='round'/></svg>">
+<style>
+:root{
+  --brand:#5B6CFF; --brand-dark:#3B49C4; --brand-soft:#EEF0FF;
+  --coral:#FF7A6B; --mint:#2ED3A5; --lemon:#FFC53D; --sky:#41C9FF; --grape:#A678FF;
+  --ink:#13172B; --ink-soft:#5A6079; --line:#E6E8F0; --canvas:#F7F8FC;
+  --success:#22C55E; --warning:#F59E0B; --danger:#EF4444; --info:#3B82F6;
+  --r-sm:10px; --r-md:16px; --r-lg:24px; --r-xl:32px; --r-pill:999px;
+  --nav-h:62px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
+  color:var(--ink);background:#0E1020;overflow:hidden}
+
+/* ---------- Masaüstü kabuğu ---------- */
+#desk{height:100%;display:flex;flex-direction:column;align-items:center;padding:20px 16px 30px;overflow-y:auto}
+.hero{text-align:center;color:#fff;max-width:760px;margin-bottom:18px}
+.hero h1{font-size:27px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.hero h1 b{background:linear-gradient(90deg,#8B9AFF,#41C9FF);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:#9BA3C7;font-size:13px;line-height:1.6}
+.chips{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:11px}
+.chip{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);
+  color:#C9CFEA;font-size:11.5px;padding:5px 10px;border-radius:var(--r-pill)}
+.chip.live{background:rgba(46,211,165,.14);border-color:rgba(46,211,165,.4);color:#7FE9CE}
+.stage{display:flex;gap:24px;align-items:flex-start;max-width:1140px;width:100%;justify-content:center}
+.nav{width:196px;flex-shrink:0}
+.nav-title{color:#6C74A0;font-size:10px;font-weight:800;letter-spacing:1.1px;
+  text-transform:uppercase;margin:13px 0 6px 10px}
+.nav-title:first-child{margin-top:0}
+.nav button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:transparent;
+  border:1px solid transparent;color:#A8B0D4;font-size:12.5px;font-family:inherit;padding:8px 11px;
+  border-radius:11px;cursor:pointer;transition:.15s;margin-bottom:2px}
+.nav button:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav button.on{background:var(--brand);color:#fff;border-color:#7C89FF;font-weight:600}
+.nav .ico{width:18px;text-align:center;font-size:14px}
+.device{width:392px;height:812px;background:#000;border-radius:46px;padding:11px;
+  box-shadow:0 40px 90px rgba(0,0,0,.6),0 0 0 2px #24273D;position:relative;flex-shrink:0}
+.device::after{content:'';position:absolute;top:23px;left:50%;transform:translateX(-50%);
+  width:104px;height:26px;background:#000;border-radius:var(--r-pill);z-index:60;pointer-events:none}
+.device #app{border-radius:36px}
+.caption{color:#8B93BC;font-size:12px;text-align:center;max-width:392px;line-height:1.55;margin-top:11px}
+.notes{width:230px;flex-shrink:0}
+.note{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:13px;padding:12px;margin-bottom:9px}
+.note h4{color:#fff;font-size:12px;font-weight:700;margin-bottom:5px}
+.note p{color:#98A0C6;font-size:11.5px;line-height:1.6}
+
+/* ---------- Uygulama yüzeyi ---------- */
+#app{width:100%;height:100%;background:var(--canvas);overflow:hidden;position:relative;
+  display:flex;flex-direction:column}
+#view{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#view::-webkit-scrollbar{display:none}
+body.mobile #desk{display:none}
+body.mobile #phone-host{position:fixed;inset:0;padding:0;border-radius:0;box-shadow:none;background:var(--canvas)}
+body.mobile #phone-host::after{display:none}
+body.mobile #app{border-radius:0}
+
+/* ---------- Ortak ---------- */
+.row{display:flex;align-items:center}
+.between{justify-content:space-between}
+.center{justify-content:center}
+.grow{flex:1;min-width:0}
+.pad{padding:18px 16px 20px}
+.pad-c{padding:14px 18px 20px}
+.sub{color:var(--ink-soft);font-size:12.5px}
+.h2{font-size:16.5px;font-weight:800}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:15px}
+.soft{background:#fff;border:none;border-radius:var(--r-lg);box-shadow:0 4px 12px rgba(15,21,51,.05)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;
+  padding:4px 9px;border-radius:var(--r-pill);white-space:nowrap;max-width:100%}
+.bar{background:var(--line);border-radius:var(--r-pill);overflow:hidden;height:8px}
+.bar>i{display:block;height:100%;border-radius:var(--r-pill);transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.appbar{position:sticky;top:0;z-index:30;background:inherit;
+  padding:calc(var(--safe-top) + 12px) 16px 10px;display:flex;align-items:center;gap:9px}
+.appbar h2{font-size:17px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ibtn{width:38px;height:38px;min-width:38px;border-radius:var(--r-pill);border:none;background:transparent;
+  display:grid;place-items:center;cursor:pointer;font-size:16px;color:var(--ink-soft);font-family:inherit}
+.ibtn:active{background:#E9EBF5}
+.pill{height:36px;background:#fff;border-radius:var(--r-pill);display:inline-flex;align-items:center;
+  gap:5px;padding:0 11px;box-shadow:0 4px 12px rgba(15,21,51,.06);font-weight:800;font-size:13.5px;
+  border:none;font-family:inherit;cursor:pointer;color:var(--ink);flex-shrink:0}
+
+/* ---------- Alt navigasyon ---------- */
+#nav{height:calc(var(--nav-h) + var(--safe-bot));background:#fff;border-top:1px solid var(--line);
+  display:flex;padding-bottom:var(--safe-bot);flex-shrink:0}
+#nav.hide{display:none}
+#nav button{flex:1;background:none;border:none;font-family:inherit;cursor:pointer;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--ink-soft);padding:0}
+#nav button.on{color:var(--brand)}
+#nav .ni{font-size:20px;line-height:1;transition:transform .18s}
+#nav button.on .ni{transform:scale(1.12)}
+#nav .nl{font-size:10.5px;font-weight:600}
+#nav button.on .nl{font-weight:800}
+
+/* ---------- Buddy ---------- */
+.buddy{position:relative;display:grid;place-items:center;margin:0 auto}
+.face{border-radius:50%;display:grid;place-items:center;position:relative;animation:breathe 2.6s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+.ring{position:absolute;border-radius:50%;border:3px solid;animation:ripple 1.6s ease-out infinite}
+@keyframes ripple{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.6);opacity:0}}
+.eye{background:#fff;border-radius:50%;display:grid;place-items:center;animation:blink 4.4s infinite}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.08)}}
+.pupil{background:var(--ink);border-radius:50%;position:relative}
+.pupil::after{content:'';position:absolute;top:14%;left:14%;width:36%;height:36%;background:#fff;border-radius:50%}
+.m-smile{border-bottom:5px solid var(--ink);border-radius:0 0 60px 60px}
+.m-o{background:var(--ink);border-radius:50%}
+.m-talk{background:var(--ink);border-radius:9px;animation:talk .34s ease-in-out infinite alternate}
+@keyframes talk{from{height:8px}to{height:24px}}
+.cheek{position:absolute;background:rgba(255,122,107,.35);border-radius:50%}
+
+/* ---------- Öğrenme yolu ---------- */
+.continue{width:100%;margin-top:16px;padding:15px;border:none;border-radius:var(--r-xl);cursor:pointer;
+  display:flex;align-items:center;gap:6px;font-family:inherit;
+  background:linear-gradient(135deg,#5B6CFF,#3B49C4);box-shadow:0 12px 30px rgba(91,108,255,.32)}
+.continue:active{transform:scale(.99)}
+.lnode{width:100%;display:flex;align-items:center;gap:11px;padding:12px;margin-bottom:9px;
+  background:#fff;border:none;border-radius:var(--r-lg);cursor:pointer;font-family:inherit;
+  box-shadow:0 4px 12px rgba(15,21,51,.05)}
+.lnode:active{transform:scale(.99)}
+
+/* ---------- Ders ---------- */
+.bubble{background:#fff;border-radius:var(--r-xl);padding:16px;box-shadow:0 8px 24px rgba(15,21,51,.08)}
+.bubble .tx{font-size:17px;line-height:1.35;font-weight:600}
+.heard{margin-top:12px;padding:13px;border-radius:var(--r-lg);border:2px solid}
+.opt{border-radius:var(--r-xl);border:2px solid;background:#fff;cursor:pointer;font-family:inherit;
+  font-weight:800;box-shadow:0 4px 12px rgba(15,21,51,.05);transition:.12s}
+.opt:active{transform:scale(.95)}
+.opt:disabled{opacity:.55;cursor:default}
+.lbar{background:#fff;border-radius:var(--r-xl) var(--r-xl) 0 0;padding:12px 18px calc(14px + var(--safe-bot));
+  box-shadow:0 -8px 24px rgba(15,21,51,.07);flex-shrink:0}
+.sbtn{background:var(--canvas);border:none;border-radius:var(--r-md);height:52px;padding:0 12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  cursor:pointer;font-family:inherit;color:var(--ink-soft);flex-shrink:0}
+.sbtn span:first-child{font-size:17px}
+.sbtn span:last-child{font-size:10px;font-weight:700}
+.wave{display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:8px}
+.wave i{width:5px;border-radius:3px;display:block}
+.bigstar{font-size:46px;display:inline-block;animation:pop .5s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ---------- Kartlar ---------- */
+.badge-tile{background:#fff;border-radius:var(--r-lg);padding:13px;box-shadow:0 4px 12px rgba(15,21,51,.05);
+  min-height:100px;display:flex;flex-direction:column}
+.badge-tile.lock{opacity:.45;box-shadow:none;border:2px solid var(--line)}
+.crow{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;margin-bottom:10px;
+  cursor:pointer;display:block;width:100%;font-family:inherit;text-align:left}
+.crow:active{transform:scale(.99)}
+.crow.risk{border-color:rgba(245,158,11,.4)}
+.avat{width:42px;height:42px;background:var(--canvas);border-radius:var(--r-md);display:grid;
+  place-items:center;font-size:21px;flex-shrink:0}
+.alert{background:#fff;border:1px solid var(--line);border-radius:var(--r-md);padding:13px;
+  display:flex;gap:11px;margin-bottom:10px;width:100%;font-family:inherit;cursor:pointer;text-align:left}
+.alert .ai{width:32px;height:32px;border-radius:var(--r-sm);display:grid;place-items:center;
+  font-size:15px;flex-shrink:0}
+.banner{padding:14px;border-radius:var(--r-lg);display:flex;gap:11px;align-items:flex-start}
+
+/* ---------- Ayarlar ---------- */
+.sgroup{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.stile{display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;border:none;
+  background:none;width:100%;font-family:inherit;text-align:left}
+.stile:active{background:#F5F6FB}
+.stile+.stile{border-top:1px solid var(--line)}
+.sicon{width:34px;height:34px;border-radius:var(--r-sm);display:grid;place-items:center;font-size:16px;flex-shrink:0}
+.stitle{font-size:14.5px;font-weight:700;color:var(--ink);display:block}
+.ssub{font-size:12.5px;color:var(--ink-soft);line-height:1.35;margin-top:2px;display:block}
+.slabel{font-size:11.5px;font-weight:800;letter-spacing:.9px;color:var(--ink-soft);
+  text-transform:uppercase;margin:0 0 9px 6px}
+.sw{width:46px;height:27px;border-radius:14px;background:var(--line);position:relative;flex-shrink:0;
+  transition:.2s;cursor:pointer;border:none}
+.sw.on{background:var(--brand)}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;background:#fff;
+  border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.sw.on::after{left:22px}
+.inp{width:100%;padding:13px;border:1px solid var(--line);border-radius:var(--r-md);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;background:#fff;color:var(--ink);outline:none}
+.inp:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(91,108,255,.14)}
+.inp.pin{text-align:center;font-size:22px;letter-spacing:10px;margin-top:14px}
+.btn{width:100%;height:52px;border:none;border-radius:var(--r-md);background:var(--brand);color:#fff;
+  font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;gap:8px}
+.btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+.btn.danger{background:#fff;border:1px solid rgba(239,68,68,.35);color:var(--danger)}
+.btn:active{opacity:.85}
+.btn:disabled{opacity:.6}
+.pcard{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;margin-bottom:10px;
+  display:flex;gap:12px;align-items:flex-start;cursor:pointer;width:100%;font-family:inherit;text-align:left}
+.pcard.sel{border-color:var(--brand);border-width:2px;padding:13px}
+.rng{width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--line);
+  outline:none;margin:14px 0 6px}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:var(--brand);cursor:pointer;box-shadow:0 2px 6px rgba(91,108,255,.4)}
+.rng::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--brand);border:none;cursor:pointer}
+
+/* ---------- Modal / sheet / toast ---------- */
+#modal,#sheet{position:absolute;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
+  background:rgba(19,23,43,.45);backdrop-filter:blur(2px)}
+#modal.show,#sheet.show{display:flex}
+#sheet{align-items:flex-end}
+.mbox{background:#fff;border-radius:var(--r-lg);padding:20px;margin:20px;max-width:330px;width:100%}
+.mbox h3{font-size:17px;font-weight:800;margin-bottom:10px}
+.mbody{font-size:13.5px;line-height:1.5}
+.mact{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+.mbtn{border:none;background:none;color:var(--ink-soft);font-family:inherit;font-size:14px;
+  font-weight:700;padding:11px 16px;border-radius:var(--r-md);cursor:pointer}
+.mbtn.primary{background:var(--brand);color:#fff}
+.mbtn.primary.danger{background:var(--danger)}
+.sbox{background:#fff;border-radius:var(--r-xl) var(--r-xl) 0 0;padding:10px 16px calc(16px + var(--safe-bot));width:100%}
+.shandle{width:38px;height:4px;background:var(--line);border-radius:2px;margin:4px auto 12px}
+.sbox h3{font-size:17px;font-weight:800;margin-bottom:12px}
+.sitem{width:100%;display:flex;align-items:center;gap:12px;padding:13px 10px;border:none;background:none;
+  font-family:inherit;cursor:pointer;border-radius:var(--r-md);text-align:left}
+.sitem:active{background:#F5F6FB}
+.sitem+.sitem{border-top:1px solid var(--line)}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 24px);
+  background:var(--ink);color:#fff;padding:11px 17px;border-radius:var(--r-pill);font-size:13.5px;
+  z-index:300;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;max-width:90%;
+  overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1}
+
+@media(max-width:1180px){#desk .notes{display:none}}
+@media(max-width:900px){#desk .nav{display:none}}
+</style>
+</head>
+<body>
+
+<div id="desk">
+  <div class="hero">
+    <h1>Talk <b>Buddy</b> — Çalışan Demo</h1>
+    <p>Beta 0.9.0 · Ders motoru, fonolojik değerlendirme ve ilerleme sistemi tarayıcıda gerçekten çalışıyor.
+       Chrome veya Edge kullanıyorsanız mikrofonla konuşarak ders yapabilirsiniz.</p>
+    <div class="chips">
+      <span class="chip live">● Canlı motor</span>
+      <span class="chip">1.899 alıştırma</span>
+      <span class="chip">11 ünite · 33 ders</span>
+      <span class="chip">Sesli soru + sesli cevap</span>
+      <span class="chip">Hatasız öğrenme</span>
+      <span class="chip">Veli / öğretmen PIN</span>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="nav" id="navlist"></div>
+    <div>
+      <div class="device" id="phone-host-desk"></div>
+      <p class="caption" id="caption"></p>
+    </div>
+    <div class="notes" id="notes"></div>
+  </div>
+</div>
+
+<div id="phone-host">
+  <div id="app">
+    <div id="view"></div>
+    <div id="nav"></div>
+    <div id="modal"></div>
+    <div id="sheet"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<script>
+/* @@CONTENT@@ */
+/* @@ENGINE@@ */
+/* @@SPEECH@@ */
+/* @@APP@@ */
+/* @@PANELS@@ */
+/* @@NAV@@ */
+</script>
+</body>
+</html>

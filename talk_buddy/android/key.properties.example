@@ -1,0 +1,7 @@
+# Release imzalama icin: bu dosyayi key.properties olarak kopyalayin.
+# Anahtar uretimi (Windows PowerShell):
+#   keytool -genkey -v -keystore talkbuddy.jks -keyalg RSA -keysize 2048 -validity 10000 -alias talkbuddy
+storePassword=DEGISTIRIN
+keyPassword=DEGISTIRIN
+keyAlias=talkbuddy
+storeFile=talkbuddy.jks

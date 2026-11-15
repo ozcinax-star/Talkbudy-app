@@ -1,0 +1,44 @@
+name: talk_buddy
+description: Talk Buddy - AI destekli konuşma arkadaşı. Çocuklarda dil ve konuşma gelişimini oyunlaştırarak destekler, aileye ve uzmana gerçek zamanlı veri sunar.
+publish_to: 'none'
+version: 0.9.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  flutter_riverpod: ^2.5.1
+  go_router: ^14.2.0
+
+  speech_to_text: ^6.6.2
+  flutter_tts: ^4.0.2
+  permission_handler: ^11.3.1
+
+  http: ^1.2.1
+  shared_preferences: ^2.2.3
+  crypto: ^3.0.3
+
+  fl_chart: ^0.68.0
+  google_fonts: ^6.2.1
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+# Kotlin 1.9 / Flutter 3.24 ile uyumlu eklenti sürümleri (daha yenileri Kotlin 2.x ister)
+dependency_overrides:
+  flutter_tts: 4.0.2
+  shared_preferences_android: 2.3.2
+  path_provider_android: 2.2.12
+  permission_handler_android: 12.0.12

@@ -1,0 +1,4556 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#5B6CFF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Talk Buddy">
+<meta name="description" content="Talk Buddy - AI destekli konusma arkadasi. Calisan demo.">
+<title>Talk Buddy — Çalışan Demo (Beta 0.9.0)</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23EEF0FF'/><circle cx='32' cy='32' r='21' fill='%235B6CFF'/><circle cx='25' cy='28' r='4' fill='%23fff'/><circle cx='39' cy='28' r='4' fill='%23fff'/><path d='M24 40q8 7 16 0' stroke='%2313172B' stroke-width='3' fill='none' stroke-linecap='round'/></svg>">
+<style>
+:root{
+  --brand:#5B6CFF; --brand-dark:#3B49C4; --brand-soft:#EEF0FF;
+  --coral:#FF7A6B; --mint:#2ED3A5; --lemon:#FFC53D; --sky:#41C9FF; --grape:#A678FF;
+  --ink:#13172B; --ink-soft:#5A6079; --line:#E6E8F0; --canvas:#F7F8FC;
+  --success:#22C55E; --warning:#F59E0B; --danger:#EF4444; --info:#3B82F6;
+  --r-sm:10px; --r-md:16px; --r-lg:24px; --r-xl:32px; --r-pill:999px;
+  --nav-h:62px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;
+  color:var(--ink);background:#0E1020;overflow:hidden}
+
+/* ---------- Masaüstü kabuğu ---------- */
+#desk{height:100%;display:flex;flex-direction:column;align-items:center;padding:20px 16px 30px;overflow-y:auto}
+.hero{text-align:center;color:#fff;max-width:760px;margin-bottom:18px}
+.hero h1{font-size:27px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.hero h1 b{background:linear-gradient(90deg,#8B9AFF,#41C9FF);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:#9BA3C7;font-size:13px;line-height:1.6}
+.chips{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:11px}
+.chip{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);
+  color:#C9CFEA;font-size:11.5px;padding:5px 10px;border-radius:var(--r-pill)}
+.chip.live{background:rgba(46,211,165,.14);border-color:rgba(46,211,165,.4);color:#7FE9CE}
+.stage{display:flex;gap:24px;align-items:flex-start;max-width:1140px;width:100%;justify-content:center}
+.nav{width:196px;flex-shrink:0}
+.nav-title{color:#6C74A0;font-size:10px;font-weight:800;letter-spacing:1.1px;
+  text-transform:uppercase;margin:13px 0 6px 10px}
+.nav-title:first-child{margin-top:0}
+.nav button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:transparent;
+  border:1px solid transparent;color:#A8B0D4;font-size:12.5px;font-family:inherit;padding:8px 11px;
+  border-radius:11px;cursor:pointer;transition:.15s;margin-bottom:2px}
+.nav button:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav button.on{background:var(--brand);color:#fff;border-color:#7C89FF;font-weight:600}
+.nav .ico{width:18px;text-align:center;font-size:14px}
+.device{width:392px;height:812px;background:#000;border-radius:46px;padding:11px;
+  box-shadow:0 40px 90px rgba(0,0,0,.6),0 0 0 2px #24273D;position:relative;flex-shrink:0}
+.device::after{content:'';position:absolute;top:23px;left:50%;transform:translateX(-50%);
+  width:104px;height:26px;background:#000;border-radius:var(--r-pill);z-index:60;pointer-events:none}
+.device #app{border-radius:36px}
+.caption{color:#8B93BC;font-size:12px;text-align:center;max-width:392px;line-height:1.55;margin-top:11px}
+.notes{width:230px;flex-shrink:0}
+.note{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:13px;padding:12px;margin-bottom:9px}
+.note h4{color:#fff;font-size:12px;font-weight:700;margin-bottom:5px}
+.note p{color:#98A0C6;font-size:11.5px;line-height:1.6}
+
+/* ---------- Uygulama yüzeyi ---------- */
+#app{width:100%;height:100%;background:var(--canvas);overflow:hidden;position:relative;
+  display:flex;flex-direction:column}
+#view{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#view::-webkit-scrollbar{display:none}
+body.mobile #desk{display:none}
+body.mobile #phone-host{position:fixed;inset:0;padding:0;border-radius:0;box-shadow:none;background:var(--canvas)}
+body.mobile #phone-host::after{display:none}
+body.mobile #app{border-radius:0}
+
+/* ---------- Ortak ---------- */
+.row{display:flex;align-items:center}
+.between{justify-content:space-between}
+.center{justify-content:center}
+.grow{flex:1;min-width:0}
+.pad{padding:18px 16px 20px}
+.pad-c{padding:14px 18px 20px}
+.sub{color:var(--ink-soft);font-size:12.5px}
+.h2{font-size:16.5px;font-weight:800}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:15px}
+.soft{background:#fff;border:none;border-radius:var(--r-lg);box-shadow:0 4px 12px rgba(15,21,51,.05)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;
+  padding:4px 9px;border-radius:var(--r-pill);white-space:nowrap;max-width:100%}
+.bar{background:var(--line);border-radius:var(--r-pill);overflow:hidden;height:8px}
+.bar>i{display:block;height:100%;border-radius:var(--r-pill);transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.appbar{position:sticky;top:0;z-index:30;background:inherit;
+  padding:calc(var(--safe-top) + 12px) 16px 10px;display:flex;align-items:center;gap:9px}
+.appbar h2{font-size:17px;font-weight:800;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ibtn{width:38px;height:38px;min-width:38px;border-radius:var(--r-pill);border:none;background:transparent;
+  display:grid;place-items:center;cursor:pointer;font-size:16px;color:var(--ink-soft);font-family:inherit}
+.ibtn:active{background:#E9EBF5}
+.pill{height:36px;background:#fff;border-radius:var(--r-pill);display:inline-flex;align-items:center;
+  gap:5px;padding:0 11px;box-shadow:0 4px 12px rgba(15,21,51,.06);font-weight:800;font-size:13.5px;
+  border:none;font-family:inherit;cursor:pointer;color:var(--ink);flex-shrink:0}
+
+/* ---------- Alt navigasyon ---------- */
+#nav{height:calc(var(--nav-h) + var(--safe-bot));background:#fff;border-top:1px solid var(--line);
+  display:flex;padding-bottom:var(--safe-bot);flex-shrink:0}
+#nav.hide{display:none}
+#nav button{flex:1;background:none;border:none;font-family:inherit;cursor:pointer;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--ink-soft);padding:0}
+#nav button.on{color:var(--brand)}
+#nav .ni{font-size:20px;line-height:1;transition:transform .18s}
+#nav button.on .ni{transform:scale(1.12)}
+#nav .nl{font-size:10.5px;font-weight:600}
+#nav button.on .nl{font-weight:800}
+
+/* ---------- Buddy ---------- */
+.buddy{position:relative;display:grid;place-items:center;margin:0 auto}
+.face{border-radius:50%;display:grid;place-items:center;position:relative;animation:breathe 2.6s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+.ring{position:absolute;border-radius:50%;border:3px solid;animation:ripple 1.6s ease-out infinite}
+@keyframes ripple{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.6);opacity:0}}
+.eye{background:#fff;border-radius:50%;display:grid;place-items:center;animation:blink 4.4s infinite}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.08)}}
+.pupil{background:var(--ink);border-radius:50%;position:relative}
+.pupil::after{content:'';position:absolute;top:14%;left:14%;width:36%;height:36%;background:#fff;border-radius:50%}
+.m-smile{border-bottom:5px solid var(--ink);border-radius:0 0 60px 60px}
+.m-o{background:var(--ink);border-radius:50%}
+.m-talk{background:var(--ink);border-radius:9px;animation:talk .34s ease-in-out infinite alternate}
+@keyframes talk{from{height:8px}to{height:24px}}
+.cheek{position:absolute;background:rgba(255,122,107,.35);border-radius:50%}
+
+/* ---------- Öğrenme yolu ---------- */
+.continue{width:100%;margin-top:16px;padding:15px;border:none;border-radius:var(--r-xl);cursor:pointer;
+  display:flex;align-items:center;gap:6px;font-family:inherit;
+  background:linear-gradient(135deg,#5B6CFF,#3B49C4);box-shadow:0 12px 30px rgba(91,108,255,.32)}
+.continue:active{transform:scale(.99)}
+.lnode{width:100%;display:flex;align-items:center;gap:11px;padding:12px;margin-bottom:9px;
+  background:#fff;border:none;border-radius:var(--r-lg);cursor:pointer;font-family:inherit;
+  box-shadow:0 4px 12px rgba(15,21,51,.05)}
+.lnode:active{transform:scale(.99)}
+
+/* ---------- Ders ---------- */
+.bubble{background:#fff;border-radius:var(--r-xl);padding:16px;box-shadow:0 8px 24px rgba(15,21,51,.08)}
+.bubble .tx{font-size:17px;line-height:1.35;font-weight:600}
+.heard{margin-top:12px;padding:13px;border-radius:var(--r-lg);border:2px solid}
+.opt{border-radius:var(--r-xl);border:2px solid;background:#fff;cursor:pointer;font-family:inherit;
+  font-weight:800;box-shadow:0 4px 12px rgba(15,21,51,.05);transition:.12s}
+.opt:active{transform:scale(.95)}
+.opt:disabled{opacity:.55;cursor:default}
+.lbar{background:#fff;border-radius:var(--r-xl) var(--r-xl) 0 0;padding:12px 18px calc(14px + var(--safe-bot));
+  box-shadow:0 -8px 24px rgba(15,21,51,.07);flex-shrink:0}
+.sbtn{background:var(--canvas);border:none;border-radius:var(--r-md);height:52px;padding:0 12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  cursor:pointer;font-family:inherit;color:var(--ink-soft);flex-shrink:0}
+.sbtn span:first-child{font-size:17px}
+.sbtn span:last-child{font-size:10px;font-weight:700}
+.wave{display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:8px}
+.wave i{width:5px;border-radius:3px;display:block}
+.bigstar{font-size:46px;display:inline-block;animation:pop .5s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* ---------- Kartlar ---------- */
+.badge-tile{background:#fff;border-radius:var(--r-lg);padding:13px;box-shadow:0 4px 12px rgba(15,21,51,.05);
+  min-height:100px;display:flex;flex-direction:column}
+.badge-tile.lock{opacity:.45;box-shadow:none;border:2px solid var(--line)}
+.crow{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;margin-bottom:10px;
+  cursor:pointer;display:block;width:100%;font-family:inherit;text-align:left}
+.crow:active{transform:scale(.99)}
+.crow.risk{border-color:rgba(245,158,11,.4)}
+.avat{width:42px;height:42px;background:var(--canvas);border-radius:var(--r-md);display:grid;
+  place-items:center;font-size:21px;flex-shrink:0}
+.alert{background:#fff;border:1px solid var(--line);border-radius:var(--r-md);padding:13px;
+  display:flex;gap:11px;margin-bottom:10px;width:100%;font-family:inherit;cursor:pointer;text-align:left}
+.alert .ai{width:32px;height:32px;border-radius:var(--r-sm);display:grid;place-items:center;
+  font-size:15px;flex-shrink:0}
+.banner{padding:14px;border-radius:var(--r-lg);display:flex;gap:11px;align-items:flex-start}
+
+/* ---------- Ayarlar ---------- */
+.sgroup{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden}
+.stile{display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;border:none;
+  background:none;width:100%;font-family:inherit;text-align:left}
+.stile:active{background:#F5F6FB}
+.stile+.stile{border-top:1px solid var(--line)}
+.sicon{width:34px;height:34px;border-radius:var(--r-sm);display:grid;place-items:center;font-size:16px;flex-shrink:0}
+.stitle{font-size:14.5px;font-weight:700;color:var(--ink);display:block}
+.ssub{font-size:12.5px;color:var(--ink-soft);line-height:1.35;margin-top:2px;display:block}
+.slabel{font-size:11.5px;font-weight:800;letter-spacing:.9px;color:var(--ink-soft);
+  text-transform:uppercase;margin:0 0 9px 6px}
+.sw{width:46px;height:27px;border-radius:14px;background:var(--line);position:relative;flex-shrink:0;
+  transition:.2s;cursor:pointer;border:none}
+.sw.on{background:var(--brand)}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:21px;height:21px;background:#fff;
+  border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.sw.on::after{left:22px}
+.inp{width:100%;padding:13px;border:1px solid var(--line);border-radius:var(--r-md);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;background:#fff;color:var(--ink);outline:none}
+.inp:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(91,108,255,.14)}
+.inp.pin{text-align:center;font-size:22px;letter-spacing:10px;margin-top:14px}
+.btn{width:100%;height:52px;border:none;border-radius:var(--r-md);background:var(--brand);color:#fff;
+  font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;gap:8px}
+.btn.ghost{background:#fff;border:1px solid var(--line);color:var(--ink)}
+.btn.danger{background:#fff;border:1px solid rgba(239,68,68,.35);color:var(--danger)}
+.btn:active{opacity:.85}
+.btn:disabled{opacity:.6}
+.pcard{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:14px;margin-bottom:10px;
+  display:flex;gap:12px;align-items:flex-start;cursor:pointer;width:100%;font-family:inherit;text-align:left}
+.pcard.sel{border-color:var(--brand);border-width:2px;padding:13px}
+.rng{width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--line);
+  outline:none;margin:14px 0 6px}
+.rng::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:var(--brand);cursor:pointer;box-shadow:0 2px 6px rgba(91,108,255,.4)}
+.rng::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--brand);border:none;cursor:pointer}
+
+/* ---------- Modal / sheet / toast ---------- */
+#modal,#sheet{position:absolute;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
+  background:rgba(19,23,43,.45);backdrop-filter:blur(2px)}
+#modal.show,#sheet.show{display:flex}
+#sheet{align-items:flex-end}
+.mbox{background:#fff;border-radius:var(--r-lg);padding:20px;margin:20px;max-width:330px;width:100%}
+.mbox h3{font-size:17px;font-weight:800;margin-bottom:10px}
+.mbody{font-size:13.5px;line-height:1.5}
+.mact{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+.mbtn{border:none;background:none;color:var(--ink-soft);font-family:inherit;font-size:14px;
+  font-weight:700;padding:11px 16px;border-radius:var(--r-md);cursor:pointer}
+.mbtn.primary{background:var(--brand);color:#fff}
+.mbtn.primary.danger{background:var(--danger)}
+.sbox{background:#fff;border-radius:var(--r-xl) var(--r-xl) 0 0;padding:10px 16px calc(16px + var(--safe-bot));width:100%}
+.shandle{width:38px;height:4px;background:var(--line);border-radius:2px;margin:4px auto 12px}
+.sbox h3{font-size:17px;font-weight:800;margin-bottom:12px}
+.sitem{width:100%;display:flex;align-items:center;gap:12px;padding:13px 10px;border:none;background:none;
+  font-family:inherit;cursor:pointer;border-radius:var(--r-md);text-align:left}
+.sitem:active{background:#F5F6FB}
+.sitem+.sitem{border-top:1px solid var(--line)}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--nav-h) + 24px);
+  background:var(--ink);color:#fff;padding:11px 17px;border-radius:var(--r-pill);font-size:13.5px;
+  z-index:300;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap;max-width:90%;
+  overflow:hidden;text-overflow:ellipsis}
+.toast.show{opacity:1}
+
+@media(max-width:1180px){#desk .notes{display:none}}
+@media(max-width:900px){#desk .nav{display:none}}
+</style>
+</head>
+<body>
+
+<div id="desk">
+  <div class="hero">
+    <h1>Talk <b>Buddy</b> — Çalışan Demo</h1>
+    <p>Beta 0.9.0 · Ders motoru, fonolojik değerlendirme ve ilerleme sistemi tarayıcıda gerçekten çalışıyor.
+       Chrome veya Edge kullanıyorsanız mikrofonla konuşarak ders yapabilirsiniz.</p>
+    <div class="chips">
+      <span class="chip live">● Canlı motor</span>
+      <span class="chip">1.899 alıştırma</span>
+      <span class="chip">11 ünite · 33 ders</span>
+      <span class="chip">Sesli soru + sesli cevap</span>
+      <span class="chip">Hatasız öğrenme</span>
+      <span class="chip">Veli / öğretmen PIN</span>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="nav" id="navlist"></div>
+    <div>
+      <div class="device" id="phone-host-desk"></div>
+      <p class="caption" id="caption"></p>
+    </div>
+    <div class="notes" id="notes"></div>
+  </div>
+</div>
+
+<div id="phone-host">
+  <div id="app">
+    <div id="view"></div>
+    <div id="nav"></div>
+    <div id="modal"></div>
+    <div id="sheet"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ===========================================================================
+   Talk Buddy - Icerik kutuphanesi
+   OTOMATIK URETILDI: lib/data/curriculum/content_library.dart dosyasindan.
+   Elle duzenlemeyin; Dart tarafini degistirip 'python3 demo/gen_content.py' calistirin.
+   =========================================================================== */
+
+const TEMPLATES = [
+  {
+    "id": "lr_pbm",
+    "type": "listenRepeat",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "p",
+      "b",
+      "m"
+    ],
+    "difficulty": 1,
+    "emoji": "👄",
+    "prompts": [
+      "Dudaklarını birleştir ve benimle söyle: {kelime}",
+      "Şimdi sıra sende. {kelime} diyebilir misin?",
+      "Ben söyleyeyim, sen tekrar et: {kelime}",
+      "Bu kelime çok eğlenceli: {kelime}. Sen de dene!",
+      "Hazır mısın? {kelime}"
+    ],
+    "slots": [
+      {
+        "key": "kelime",
+        "values": [
+          "baba",
+          "maymun",
+          "para",
+          "burun",
+          "masa",
+          "balon",
+          "muz",
+          "pasta",
+          "bebek",
+          "memnun",
+          "pencere",
+          "bardak",
+          "mum",
+          "patates"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "np_pbm",
+    "type": "namePicture",
+    "domain": "vocabulary",
+    "targetPhonemes": [
+      "p",
+      "b",
+      "m"
+    ],
+    "difficulty": 1,
+    "emoji": "",
+    "prompts": [
+      "Bak bakalım, bu ne?",
+      "Bunu tanıdın mı? Adı ne?",
+      "Bunun adını söyleyebilir misin?",
+      "Şunu bir gör! Bu nedir?"
+    ],
+    "slots": [
+      {
+        "key": "görsel",
+        "values": [
+          "🍌|muz",
+          "🎈|balon",
+          "🐵|maymun",
+          "🎂|pasta",
+          "👶|bebek",
+          "🥔|patates"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lr_tdn",
+    "type": "listenRepeat",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "t",
+      "d",
+      "n"
+    ],
+    "difficulty": 1,
+    "emoji": "👅",
+    "prompts": [
+      "Dilinin ucunu dişlerinin arkasına koy ve söyle: {kelime}",
+      "Şimdi bunu deneyelim: {kelime}",
+      "Kulağını ver, sonra sen söyle: {kelime}",
+      "Bu kelimeyi çok seviyorum: {kelime}. Sen de söyler misin?"
+    ],
+    "slots": [
+      {
+        "key": "kelime",
+        "values": [
+          "top",
+          "tavuk",
+          "dede",
+          "defter",
+          "nine",
+          "nar",
+          "tabak",
+          "davul",
+          "nokta",
+          "tren",
+          "dondurma",
+          "nane",
+          "telefon",
+          "domates"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mp_td",
+    "type": "minimalPair",
+    "domain": "auditory",
+    "targetPhonemes": [
+      "t",
+      "d"
+    ],
+    "difficulty": 2,
+    "emoji": "",
+    "prompts": [
+      "Dikkatli dinle. Hangisini söyledim?",
+      "Kulaklarını aç bakalım, hangisiydi?",
+      "İki kelime çok benziyor. Hangisini duydun?"
+    ],
+    "slots": [
+      {
+        "key": "çift",
+        "values": [
+          "tam|dam|0",
+          "tas|das|0",
+          "dal|tal|0",
+          "top|dop|0",
+          "diş|tiş|0"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lr_kg",
+    "type": "listenRepeat",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "k",
+      "g"
+    ],
+    "difficulty": 2,
+    "emoji": "🗣️",
+    "prompts": [
+      "Bu ses boğazının arkasından gelir. Dene: {kelime}",
+      "Şimdi biraz zor bir tane: {kelime}",
+      "Ben söyleyeyim, sen tekrar et: {kelime}",
+      "Bunu söyleyebilir misin? {kelime}",
+      "Hadi bakalım: {kelime}"
+    ],
+    "slots": [
+      {
+        "key": "kelime",
+        "values": [
+          "kedi",
+          "kapı",
+          "kuş",
+          "kalem",
+          "köpek",
+          "kitap",
+          "kaşık",
+          "gül",
+          "göz",
+          "gemi",
+          "gözlük",
+          "güneş",
+          "kelebek",
+          "karpuz",
+          "gitar"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cp_kg",
+    "type": "choosePicture",
+    "domain": "auditory",
+    "targetPhonemes": [
+      "k",
+      "g"
+    ],
+    "difficulty": 2,
+    "emoji": "",
+    "prompts": [
+      "Söylediğim şeyi bul: {hedef}",
+      "Hangisi {hedef}? Dokun bakalım.",
+      "{hedef} nerede? Bulabilir misin?"
+    ],
+    "slots": [
+      {
+        "key": "set",
+        "values": [
+          "kedi|🐱🐶🐦|0",
+          "kuş|🐟🐦🐰|1",
+          "gemi|🚗🚲🚢|2",
+          "güneş|🌙⭐☀️|2",
+          "kitap|📕🎒✏️|0"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lr_fvsz",
+    "type": "listenRepeat",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "f",
+      "v",
+      "s",
+      "z"
+    ],
+    "difficulty": 3,
+    "emoji": "💨",
+    "prompts": [
+      "Bu ses yılan gibi uzun: {kelime}. Dene bakalım.",
+      "Havayı yavaşça bırak ve söyle: {kelime}",
+      "Şimdi sıra sende: {kelime}",
+      "Bu kelime biraz uzun soluklu: {kelime}"
+    ],
+    "slots": [
+      {
+        "key": "kelime",
+        "values": [
+          "fil",
+          "fener",
+          "fırça",
+          "vazo",
+          "vapur",
+          "su",
+          "saat",
+          "sepet",
+          "zebra",
+          "zil",
+          "zeytin",
+          "salıncak",
+          "fındık",
+          "volkan"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mp_sz",
+    "type": "minimalPair",
+    "domain": "auditory",
+    "targetPhonemes": [
+      "s",
+      "z"
+    ],
+    "difficulty": 3,
+    "emoji": "",
+    "prompts": [
+      "İyi dinle, hangisiydi?",
+      "Bu ikisi çok benziyor. Hangisini söyledim?",
+      "Kulağını aç: hangisi?"
+    ],
+    "slots": [
+      {
+        "key": "çift",
+        "values": [
+          "sar|zar|0",
+          "sil|zil|0",
+          "buz|bus|0",
+          "kaz|kas|0",
+          "saman|zaman|0"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lr_scj",
+    "type": "listenRepeat",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "ş",
+      "ç",
+      "c"
+    ],
+    "difficulty": 4,
+    "emoji": "🤫",
+    "prompts": [
+      "Dudaklarını hafif büz ve söyle: {kelime}",
+      "Bu ses \"şşş\" gibi başlar: {kelime}",
+      "Zor ama sen yaparsın: {kelime}",
+      "Ben söyleyeyim, sen dene: {kelime}"
+    ],
+    "slots": [
+      {
+        "key": "kelime",
+        "values": [
+          "şeker",
+          "şapka",
+          "şemsiye",
+          "çiçek",
+          "çorap",
+          "çanta",
+          "ceket",
+          "cam",
+          "ceviz",
+          "şarkı",
+          "çilek",
+          "cüzdan",
+          "şeftali"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lr_r",
+    "type": "listenRepeat",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "r"
+    ],
+    "difficulty": 5,
+    "emoji": "🐯",
+    "prompts": [
+      "Dilini titret bakalım: {kelime}",
+      "Bu en zor ses ama sen deneyeceksin: {kelime}",
+      "Kaplan gibi: {kelime}",
+      "Ben söyleyeyim, sen istediğin kadar dene: {kelime}",
+      "Acele yok, yavaşça: {kelime}"
+    ],
+    "slots": [
+      {
+        "key": "kelime",
+        "values": [
+          "araba",
+          "radyo",
+          "resim",
+          "ruh",
+          "ördek",
+          "kırmızı",
+          "portakal",
+          "tren",
+          "kraliçe",
+          "arı",
+          "orman",
+          "merdiven",
+          "kartal"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cs_r",
+    "type": "completeSentence",
+    "domain": "syntax",
+    "targetPhonemes": [
+      "r"
+    ],
+    "difficulty": 4,
+    "emoji": "",
+    "prompts": [
+      "Cümleyi tamamla: {cümle}",
+      "Devamını sen söyle: {cümle}",
+      "Şunu bitirebilir misin? {cümle}"
+    ],
+    "slots": [
+      {
+        "key": "cümle",
+        "values": [
+          "Yolda giden şeyin adı... |araba",
+          "Kırmızı ve yuvarlak meyve... |elma",
+          "Ağaçların çok olduğu yer... |orman",
+          "Bal yapan küçük böcek... |arı",
+          "Rayların üzerinde giden... |tren"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lr_l",
+    "type": "listenRepeat",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "l"
+    ],
+    "difficulty": 3,
+    "emoji": "🍋",
+    "prompts": [
+      "Dilinin ucunu yukarı kaldır: {kelime}",
+      "Şimdi bunu söyleyelim: {kelime}",
+      "Sen de dener misin? {kelime}",
+      "Kulağını ver: {kelime}"
+    ],
+    "slots": [
+      {
+        "key": "kelime",
+        "values": [
+          "limon",
+          "lale",
+          "lamba",
+          "balık",
+          "kalem",
+          "elma",
+          "salatalık",
+          "kelebek",
+          "gölge",
+          "yelken",
+          "lokum",
+          "çilek"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "np_kategori",
+    "type": "namePicture",
+    "domain": "vocabulary",
+    "targetPhonemes": [],
+    "difficulty": 2,
+    "emoji": "",
+    "prompts": [
+      "Bu ne? Adını söyler misin?",
+      "Bunu biliyor musun? Nedir?",
+      "Bak bakalım, karşımızda ne var?",
+      "Bunun adı ne acaba?"
+    ],
+    "slots": [
+      {
+        "key": "görsel",
+        "values": [
+          "🦁|aslan",
+          "🐘|fil",
+          "🚌|otobüs",
+          "🏠|ev",
+          "🌳|ağaç",
+          "☂️|şemsiye",
+          "🧦|çorap",
+          "🍇|üzüm",
+          "🐢|kaplumbağa",
+          "🚲|bisiklet",
+          "🪑|sandalye",
+          "🕰️|saat",
+          "🧸|oyuncak ayı",
+          "🍉|karpuz"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "aq_kategori",
+    "type": "answerQuestion",
+    "domain": "vocabulary",
+    "targetPhonemes": [],
+    "difficulty": 3,
+    "emoji": "",
+    "prompts": [
+      "Bana üç tane {kategori} sayabilir misin?",
+      "{kategori} deyince aklına neler geliyor?",
+      "Hangi {kategori} isimlerini biliyorsun?",
+      "En sevdiğin {kategori} hangisi? Neden?"
+    ],
+    "slots": [
+      {
+        "key": "kategori",
+        "values": [
+          "hayvan",
+          "meyve",
+          "sebze",
+          "renk",
+          "oyuncak",
+          "araç",
+          "giysi",
+          "mutfak eşyası",
+          "okul eşyası"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cs_syntax",
+    "type": "completeSentence",
+    "domain": "syntax",
+    "targetPhonemes": [],
+    "difficulty": 3,
+    "emoji": "",
+    "prompts": [
+      "Cümleyi tamamla: {cümle}",
+      "Şunun devamını söyle: {cümle}",
+      "Nasıl biter bu cümle? {cümle}"
+    ],
+    "slots": [
+      {
+        "key": "cümle",
+        "values": [
+          "Ben acıkınca... |yemek yerim",
+          "Yağmur yağınca... |şemsiye açarım",
+          "Uykum gelince... |yatarım",
+          "Üşüyünce... |mont giyerim",
+          "Parka gidince... |oynarım",
+          "Anneme sarılınca... |mutlu olurum",
+          "Karnım doyunca... |oyun oynarım"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "aq_syntax",
+    "type": "answerQuestion",
+    "domain": "syntax",
+    "targetPhonemes": [],
+    "difficulty": 4,
+    "emoji": "",
+    "prompts": [
+      "{karakter} {yer} ne yapıyor olabilir? Uzun bir cümleyle anlat.",
+      "{zaman} {yer} neler oldu, anlatır mısın?",
+      "{karakter} hakkında bana iki cümle söyler misin?"
+    ],
+    "slots": [
+      {
+        "key": "karakter",
+        "values": [
+          "tavşan Pamuk",
+          "kedi Minnoş",
+          "ayı Koca",
+          "kuş Cıvıl",
+          "fil Koko",
+          "köpek Karabaş",
+          "kaplumbağa Ağır",
+          "sincap Fındık",
+          "kurbağa Vırak"
+        ]
+      },
+      {
+        "key": "yer",
+        "values": [
+          "parkta",
+          "bahçede",
+          "ormanda",
+          "deniz kenarında",
+          "evde",
+          "okulda",
+          "markette",
+          "kütüphanede",
+          "oyun alanında"
+        ]
+      },
+      {
+        "key": "zaman",
+        "values": [
+          "bu sabah",
+          "dün akşam",
+          "öğleden sonra",
+          "hafta sonu",
+          "geçen gün"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rs_story",
+    "type": "retellStory",
+    "domain": "narrative",
+    "targetPhonemes": [],
+    "difficulty": 4,
+    "emoji": "",
+    "prompts": [
+      "{hikâye} Şimdi sen anlat bakalım, ne oldu?",
+      "{hikâye} Sonra ne olmuş olabilir?",
+      "{hikâye} Bu hikâyeyi bana kendi cümlelerinle anlatır mısın?"
+    ],
+    "slots": [
+      {
+        "key": "hikâye",
+        "values": [
+          "Küçük tavşan bahçede bir havuç bulmuş, ama havuç çok büyükmüş.",
+          "Kedi Minnoş ağaca çıkmış, sonra inemeyince miyavlamaya başlamış.",
+          "Bir çocuk parkta topunu kaybetmiş, sonra bir arkadaşı bulmuş.",
+          "Kuş Cıvıl yuvasını yapmak için dal toplamış, ama rüzgâr çıkmış.",
+          "Fil Koko su içmeye gitmiş, hortumuyla herkese su sıçratmış.",
+          "Kaplumbağa yarışa katılmış, çok yavaşmış ama hiç durmamış."
+        ]
+      }
+    ]
+  },
+  {
+    "id": "em_emotion",
+    "type": "emotionMatch",
+    "domain": "pragmatics",
+    "targetPhonemes": [],
+    "difficulty": 3,
+    "emoji": "",
+    "prompts": [
+      "{durum} Sence ne hissetti?",
+      "{durum} O an nasıl hissetmiş olabilir?",
+      "{durum} Sen olsan ne hissederdin?"
+    ],
+    "slots": [
+      {
+        "key": "durum",
+        "values": [
+          "Ali'nin balonu patladı.|üzgün|üzüldü|kötü|ağladı",
+          "Zeynep doğum günü hediyesi aldı.|mutlu|sevindi|heyecanlı|güzel",
+          "Karanlıkta bir ses duyuldu.|korktu|korkmuş|ürktü",
+          "Deniz oyuncağını arkadaşıyla paylaştı.|mutlu|iyi|güzel|sevindi",
+          "Kerem yaptığı resmi öğretmenine gösterdi.|gururlu|mutlu|sevindi|heyecanlı",
+          "Elif en sevdiği oyuncağını kaybetti.|üzgün|üzüldü|ağladı"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "aq_pragmatics",
+    "type": "answerQuestion",
+    "domain": "pragmatics",
+    "targetPhonemes": [],
+    "difficulty": 3,
+    "emoji": "",
+    "prompts": [
+      "Bugün seni ne mutlu etti?",
+      "Bir arkadaşın üzgün olsa ona ne söylerdin?",
+      "Bir şey isteyeceğin zaman nasıl söylersin?",
+      "En sevdiğin oyunu bana anlatır mısın?",
+      "Bugün sana iyi gelen bir şey oldu mu?"
+    ],
+    "slots": []
+  },
+  {
+    "id": "tt_fluency",
+    "type": "tongueTwister",
+    "domain": "articulation",
+    "targetPhonemes": [],
+    "difficulty": 4,
+    "emoji": "🎵",
+    "prompts": [
+      "Benimle söyle: {tekerleme}",
+      "Şimdi eğlenceli kısım! {tekerleme}",
+      "Yavaş başlayalım: {tekerleme}",
+      "Hazır mısın? {tekerleme}"
+    ],
+    "slots": [
+      {
+        "key": "tekerleme",
+        "values": [
+          "Bir berber bir berbere gel beraber berber dükkânı açalım demiş.",
+          "Şu köşe yaz köşesi, şu köşe kış köşesi.",
+          "Al bu takatukaları takatukacıya götür.",
+          "Dal sarkar kartal kalkar, kartal kalkar dal sarkar.",
+          "Kırk küp, kırkının da kulpu kırık küp.",
+          "Bu yoğurdu sarımsaklasak da mı saklasak?"
+        ]
+      }
+    ]
+  }
+];
+
+const UNITS = [
+  {
+    "id": "u1",
+    "title": "İlk Sesler",
+    "subtitle": "Dudak sesleri: p, b, m",
+    "emoji": "👄",
+    "color": "#5B6CFF",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "p",
+      "b",
+      "m"
+    ],
+    "minAgeMonths": 24,
+    "lessons": [
+      {
+        "id": "u1l1",
+        "unitId": "u1",
+        "title": "Tanışalım",
+        "index": 0,
+        "templateIds": [
+          "lr_pbm",
+          "np_pbm"
+        ],
+        "exerciseCount": 5
+      },
+      {
+        "id": "u1l2",
+        "unitId": "u1",
+        "title": "Kelime Avı",
+        "index": 1,
+        "templateIds": [
+          "np_pbm",
+          "lr_pbm",
+          "np_kategori"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u1l3",
+        "unitId": "u1",
+        "title": "Sohbet Vakti",
+        "index": 2,
+        "templateIds": [
+          "lr_pbm",
+          "aq_pragmatics"
+        ],
+        "exerciseCount": 6
+      }
+    ]
+  },
+  {
+    "id": "u2",
+    "title": "Dil Ucu",
+    "subtitle": "Dil sesleri: t, d, n",
+    "emoji": "👅",
+    "color": "#2ED3A5",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "t",
+      "d",
+      "n"
+    ],
+    "minAgeMonths": 26,
+    "lessons": [
+      {
+        "id": "u2l1",
+        "unitId": "u2",
+        "title": "Yeni Sesler",
+        "index": 0,
+        "templateIds": [
+          "lr_tdn"
+        ],
+        "exerciseCount": 5
+      },
+      {
+        "id": "u2l2",
+        "unitId": "u2",
+        "title": "Kulak Kesil",
+        "index": 1,
+        "templateIds": [
+          "mp_td",
+          "lr_tdn"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u2l3",
+        "unitId": "u2",
+        "title": "Birlikte Kuralım",
+        "index": 2,
+        "templateIds": [
+          "lr_tdn",
+          "cs_syntax"
+        ],
+        "exerciseCount": 6
+      }
+    ]
+  },
+  {
+    "id": "u3",
+    "title": "Arka Sesler",
+    "subtitle": "Boğaz sesleri: k, g",
+    "emoji": "🎯",
+    "color": "#FFC53D",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "k",
+      "g"
+    ],
+    "minAgeMonths": 32,
+    "lessons": [
+      {
+        "id": "u3l1",
+        "unitId": "u3",
+        "title": "Derinden Gelen",
+        "index": 0,
+        "templateIds": [
+          "lr_kg"
+        ],
+        "exerciseCount": 5
+      },
+      {
+        "id": "u3l2",
+        "unitId": "u3",
+        "title": "Bul Bakalım",
+        "index": 1,
+        "templateIds": [
+          "cp_kg",
+          "lr_kg"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u3l3",
+        "unitId": "u3",
+        "title": "Kelime Bahçesi",
+        "index": 2,
+        "templateIds": [
+          "lr_kg",
+          "np_kategori",
+          "aq_kategori"
+        ],
+        "exerciseCount": 7
+      }
+    ]
+  },
+  {
+    "id": "u4",
+    "title": "Uzun Sesler",
+    "subtitle": "Sürtünmeli: f, v, s, z",
+    "emoji": "💨",
+    "color": "#41C9FF",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "f",
+      "v",
+      "s",
+      "z"
+    ],
+    "minAgeMonths": 36,
+    "lessons": [
+      {
+        "id": "u4l1",
+        "unitId": "u4",
+        "title": "Yılan Sesi",
+        "index": 0,
+        "templateIds": [
+          "lr_fvsz"
+        ],
+        "exerciseCount": 5
+      },
+      {
+        "id": "u4l2",
+        "unitId": "u4",
+        "title": "Hangisi?",
+        "index": 1,
+        "templateIds": [
+          "mp_sz",
+          "lr_fvsz"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u4l3",
+        "unitId": "u4",
+        "title": "Cümle Kur",
+        "index": 2,
+        "templateIds": [
+          "lr_fvsz",
+          "cs_syntax"
+        ],
+        "exerciseCount": 6
+      }
+    ]
+  },
+  {
+    "id": "u5",
+    "title": "L Yolculuğu",
+    "subtitle": "l sesi",
+    "emoji": "🍋",
+    "color": "#22C55E",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "l"
+    ],
+    "minAgeMonths": 42,
+    "lessons": [
+      {
+        "id": "u5l1",
+        "unitId": "u5",
+        "title": "Dil Yukarı",
+        "index": 0,
+        "templateIds": [
+          "lr_l"
+        ],
+        "exerciseCount": 5
+      },
+      {
+        "id": "u5l2",
+        "unitId": "u5",
+        "title": "Kelimelerle",
+        "index": 1,
+        "templateIds": [
+          "lr_l",
+          "np_kategori"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u5l3",
+        "unitId": "u5",
+        "title": "Tekerleme",
+        "index": 2,
+        "templateIds": [
+          "lr_l",
+          "tt_fluency"
+        ],
+        "exerciseCount": 5
+      }
+    ]
+  },
+  {
+    "id": "u6",
+    "title": "Zor Sesler",
+    "subtitle": "ş, ç, c sesleri",
+    "emoji": "🤫",
+    "color": "#A678FF",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "ş",
+      "ç",
+      "c"
+    ],
+    "minAgeMonths": 46,
+    "lessons": [
+      {
+        "id": "u6l1",
+        "unitId": "u6",
+        "title": "Fısıltı Sesleri",
+        "index": 0,
+        "templateIds": [
+          "lr_scj"
+        ],
+        "exerciseCount": 5
+      },
+      {
+        "id": "u6l2",
+        "unitId": "u6",
+        "title": "Kelime Ustası",
+        "index": 1,
+        "templateIds": [
+          "lr_scj",
+          "np_kategori"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u6l3",
+        "unitId": "u6",
+        "title": "Anlat Bakalım",
+        "index": 2,
+        "templateIds": [
+          "lr_scj",
+          "aq_kategori"
+        ],
+        "exerciseCount": 6
+      }
+    ]
+  },
+  {
+    "id": "u7",
+    "title": "R Macerası",
+    "subtitle": "En zor ses: r",
+    "emoji": "🐯",
+    "color": "#FF7A6B",
+    "domain": "articulation",
+    "targetPhonemes": [
+      "r"
+    ],
+    "minAgeMonths": 54,
+    "lessons": [
+      {
+        "id": "u7l1",
+        "unitId": "u7",
+        "title": "İlk Adım",
+        "index": 0,
+        "templateIds": [
+          "lr_r"
+        ],
+        "exerciseCount": 5
+      },
+      {
+        "id": "u7l2",
+        "unitId": "u7",
+        "title": "Cümlede R",
+        "index": 1,
+        "templateIds": [
+          "lr_r",
+          "cs_r"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u7l3",
+        "unitId": "u7",
+        "title": "Tekerleme Ustası",
+        "index": 2,
+        "templateIds": [
+          "lr_r",
+          "tt_fluency"
+        ],
+        "exerciseCount": 6
+      }
+    ]
+  },
+  {
+    "id": "u8",
+    "title": "Kelime Bahçesi",
+    "subtitle": "Kelime dağarcığı",
+    "emoji": "📚",
+    "color": "#3B82F6",
+    "domain": "vocabulary",
+    "targetPhonemes": [],
+    "minAgeMonths": 36,
+    "lessons": [
+      {
+        "id": "u8l1",
+        "unitId": "u8",
+        "title": "Bu Ne?",
+        "index": 0,
+        "templateIds": [
+          "np_kategori"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u8l2",
+        "unitId": "u8",
+        "title": "Kategoriler",
+        "index": 1,
+        "templateIds": [
+          "aq_kategori",
+          "np_kategori"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u8l3",
+        "unitId": "u8",
+        "title": "Anlat Bana",
+        "index": 2,
+        "templateIds": [
+          "aq_kategori",
+          "aq_syntax"
+        ],
+        "exerciseCount": 5
+      }
+    ]
+  },
+  {
+    "id": "u9",
+    "title": "Cümle Kurma",
+    "subtitle": "Uzun cümleler",
+    "emoji": "🧩",
+    "color": "#F59E0B",
+    "domain": "syntax",
+    "targetPhonemes": [],
+    "minAgeMonths": 42,
+    "lessons": [
+      {
+        "id": "u9l1",
+        "unitId": "u9",
+        "title": "Tamamla",
+        "index": 0,
+        "templateIds": [
+          "cs_syntax"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u9l2",
+        "unitId": "u9",
+        "title": "Uzat Bakalım",
+        "index": 1,
+        "templateIds": [
+          "cs_syntax",
+          "aq_syntax"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u9l3",
+        "unitId": "u9",
+        "title": "Serbest Anlatım",
+        "index": 2,
+        "templateIds": [
+          "aq_syntax"
+        ],
+        "exerciseCount": 5
+      }
+    ]
+  },
+  {
+    "id": "u10",
+    "title": "Hikâye Zamanı",
+    "subtitle": "Anlatı becerisi",
+    "emoji": "📖",
+    "color": "#8B5CF6",
+    "domain": "narrative",
+    "targetPhonemes": [],
+    "minAgeMonths": 48,
+    "lessons": [
+      {
+        "id": "u10l1",
+        "unitId": "u10",
+        "title": "Dinle ve Anlat",
+        "index": 0,
+        "templateIds": [
+          "rs_story"
+        ],
+        "exerciseCount": 4
+      },
+      {
+        "id": "u10l2",
+        "unitId": "u10",
+        "title": "Sonunu Sen Yaz",
+        "index": 1,
+        "templateIds": [
+          "rs_story",
+          "aq_syntax"
+        ],
+        "exerciseCount": 5
+      },
+      {
+        "id": "u10l3",
+        "unitId": "u10",
+        "title": "Hikâye Ustası",
+        "index": 2,
+        "templateIds": [
+          "rs_story"
+        ],
+        "exerciseCount": 5
+      }
+    ]
+  },
+  {
+    "id": "u11",
+    "title": "Duygu Dünyası",
+    "subtitle": "Sosyal iletişim",
+    "emoji": "💛",
+    "color": "#EC4899",
+    "domain": "pragmatics",
+    "targetPhonemes": [],
+    "minAgeMonths": 42,
+    "lessons": [
+      {
+        "id": "u11l1",
+        "unitId": "u11",
+        "title": "Ne Hissetti?",
+        "index": 0,
+        "templateIds": [
+          "em_emotion"
+        ],
+        "exerciseCount": 5
+      },
+      {
+        "id": "u11l2",
+        "unitId": "u11",
+        "title": "Ben Nasılım?",
+        "index": 1,
+        "templateIds": [
+          "em_emotion",
+          "aq_pragmatics"
+        ],
+        "exerciseCount": 6
+      },
+      {
+        "id": "u11l3",
+        "unitId": "u11",
+        "title": "Arkadaşlık",
+        "index": 2,
+        "templateIds": [
+          "aq_pragmatics"
+        ],
+        "exerciseCount": 5
+      }
+    ]
+  }
+];
+
+const OPENERS = [
+  "Merhaba {ad}! Bugün {ünite} üzerinde çalışacağız. Hazır mısın?",
+  "Selam {ad}! Seni görmek çok güzel. Bugün {ünite} var.",
+  "Hoş geldin {ad}! Bugün birlikte {ünite} çalışalım mı?",
+  "Merhaba {ad}! Bugünkü macera: {ünite}. Başlayalım!",
+  "Seni bekliyordum {ad}! {ünite} bizi çağırıyor."
+];
+
+const CLOSERS = [
+  "Bugün çok iyi çalıştın {ad}. Seninle konuşmak harikaydı!",
+  "Ne güzel bir ders oldu! Yarın yine bekliyorum seni {ad}.",
+  "{ad}, bugün sesin çok güzel çıktı. Kendinle gurur duy!",
+  "Harika iş çıkardın {ad}. Görüşmek üzere!",
+  "Bugünkü çalışman için teşekkürler {ad}. Çok eğlendim."
+];
+
+const TRANSITIONS = [
+  "Şimdi sıradakine geçelim.",
+  "Hadi devam edelim!",
+  "Bir sonraki geliyor.",
+  "Şimdi başka bir şey deneyelim.",
+  "Sırada güzel bir tane var.",
+  "Devam ediyoruz!"
+];
+
+const ALL_LESSONS = UNITS.flatMap(u => u.lessons);
+const lessonById = id => ALL_LESSONS.find(l => l.id === id) || null;
+const unitById = id => UNITS.find(u => u.id === id) || null;
+
+/* ===========================================================================
+   Talk Buddy — Müfredat motoru (Dart sürümünün birebir JS portu)
+   Kaynak: lib/data/curriculum/{phonology,answer_evaluator,dialogue_engine,
+           content_library,progress_store}.dart
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   1. TÜRKÇE FONOLOJİ
+   --------------------------------------------------------------------------- */
+const TurkishPhonology = (() => {
+  const acquisitionOrder = {
+    p: 24, b: 24, m: 24, n: 24, t: 26, d: 26,
+    h: 28, y: 30, k: 32, g: 34, f: 36, v: 38,
+    l: 42, 'ç': 44, c: 44, s: 46, z: 48, 'ş': 50,
+    j: 54, r: 60,
+  };
+
+  const processes = [
+    {id:'fronting', label:'Öne alma',
+     explanation:'Arka damak sesleri (k, g) dil ucuyla üretiliyor: "kedi" yerine "tedi".',
+     resolve:42},
+    {id:'stopping', label:'Durdurma',
+     explanation:'Sürtünmeli sesler (s, ş, f, v, z) patlamalıya dönüyor: "su" yerine "tu".',
+     resolve:48},
+    {id:'gliding', label:'Kayma',
+     explanation:'Akıcı sesler (r, l) y sesine dönüyor: "araba" yerine "ayaba".',
+     resolve:66},
+    {id:'liquidSubstitution', label:'Akıcı ses değişimi',
+     explanation:'"r" yerine "l" ya da tersi kullanılıyor: "araba" yerine "alaba".',
+     resolve:60},
+    {id:'clusterReduction', label:'Küme sadeleştirme',
+     explanation:'Yan yana iki ünsüzden biri düşüyor: "tren" yerine "ten".',
+     resolve:48},
+    {id:'finalDeletion', label:'Son ses düşmesi',
+     explanation:'Kelimenin son sesi söylenmiyor: "kitap" yerine "kita".',
+     resolve:36},
+    {id:'syllableDeletion', label:'Hece düşmesi',
+     explanation:'Vurgusuz hece atlanıyor: "kelebek" yerine "kebek".',
+     resolve:48},
+    {id:'devoicing', label:'Ötümsüzleşme',
+     explanation:'Ötümlü ses ötümsüze dönüyor: "baba" yerine "papa".',
+     resolve:40},
+  ];
+
+  const byId = id => processes.find(p => p.id === id) || null;
+
+  const SUBS = {
+    fronting: {k:'t', g:'d'},
+    stopping: {s:'t','ş':'t', z:'d', f:'p', v:'b', c:'d','ç':'t', j:'d'},
+    gliding: {r:'y', l:'y'},
+    liquidSubstitution: {r:'l', l:'r'},
+    devoicing: {b:'p', d:'t', g:'k', c:'ç', z:'s', v:'f'},
+  };
+
+  const VOWELS = 'aeıioöuüâî';
+  const CONSONANTS = 'bcçdfgğhjklmnprsştvyz';
+
+  const isVowel = c => VOWELS.includes(c);
+  const isConsonant = c => CONSONANTS.includes(c);
+
+  function normalize(s) {
+    return String(s || '')
+      .toLocaleLowerCase('tr')
+      .replace(/â/g, 'a').replace(/î/g, 'i')
+      .replace(/[^a-zçğıöşü\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  const tokenize = s => normalize(s).split(' ').filter(Boolean);
+
+  const SUFFIXES = [
+    'lerimizi','larımızı','lerimiz','larımız','lerini','larını',
+    'lerde','larda','lerin','ların','ecek','acak','iyor','ıyor',
+    'uyor','üyor','miş','mış','muş','müş','ler','lar','den',
+    'dan','ten','tan','nin','nın','nun','nün','de','da','te',
+    'ta','yi','yı','yu','yü','ye','ya','im','ım','um','üm',
+    'in','ın','un','ün','si','sı','su','sü','i','ı','u','ü',
+    'e','a','m','n','s',
+  ];
+
+  function stem(w) {
+    let out = w;
+    for (let pass = 0; pass < 2; pass++) {
+      for (const s of SUFFIXES) {
+        if (out.length > s.length + 2 && out.endsWith(s)) {
+          out = out.slice(0, out.length - s.length);
+          break;
+        }
+      }
+    }
+    return out;
+  }
+
+  const applyProcess = (word, pid) => {
+    const map = SUBS[pid];
+    if (!map) return word;
+    return word.split('').map(c => map[c] || c).join('');
+  };
+
+  function reduceClusters(word) {
+    let out = '', prevCons = false;
+    for (const ch of word) {
+      const isc = isConsonant(ch);
+      if (isc && prevCons) continue;
+      out += ch;
+      prevCons = isc;
+    }
+    return out;
+  }
+
+  const deleteFinal = w =>
+    w.length >= 3 && isConsonant(w[w.length - 1]) ? w.slice(0, -1) : w;
+
+  function levenshtein(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    let prev = Array.from({length: b.length + 1}, (_, i) => i);
+    for (let i = 0; i < a.length; i++) {
+      const curr = [i + 1];
+      for (let j = 0; j < b.length; j++) {
+        curr[j + 1] = Math.min(
+          curr[j] + 1,
+          prev[j + 1] + 1,
+          prev[j] + (a[i] === b[j] ? 0 : 1)
+        );
+      }
+      prev = curr;
+    }
+    return prev[b.length];
+  }
+
+  function similarity(a, b) {
+    const m = Math.max(a.length, b.length);
+    return m === 0 ? 1 : 1 - levenshtein(a, b) / m;
+  }
+
+  return {acquisitionOrder, processes, byId, normalize, tokenize, stem,
+          applyProcess, reduceClusters, deleteFinal, levenshtein, similarity,
+          isVowel, isConsonant, VOWELS, CONSONANTS};
+})();
+
+/* ---------------------------------------------------------------------------
+   Gelişimsel süreçleri tolere eden eşleştirici
+   --------------------------------------------------------------------------- */
+class PhonologyMatcher {
+  constructor(ageMonths) { this.age = ageMonths; }
+
+  matchWord(heard, target) {
+    const P = TurkishPhonology;
+    const h = P.normalize(heard);
+    const t = P.normalize(target);
+    if (!h) return {score: 0, processes: [], exact: false};
+    if (h === t) return {score: 1, processes: [], exact: true};
+
+    const hs = P.stem(h), ts = P.stem(t);
+    if (hs === ts && hs.length >= 3) {
+      return {score: 0.97, processes: [], exact: true};
+    }
+
+    let found = [];
+    let best = P.similarity(h, t);
+
+    for (const id of ['fronting','stopping','gliding','liquidSubstitution','devoicing']) {
+      const sim = P.similarity(h, P.applyProcess(t, id));
+      if (sim > best + 0.001) { best = sim; found = [id]; }
+      else if (sim >= 0.99 && !found.includes(id)) { found.push(id); }
+    }
+
+    const reduced = P.reduceClusters(t);
+    if (reduced !== t) {
+      const sim = P.similarity(h, reduced);
+      if (sim > best + 0.001) { best = sim; found = ['clusterReduction']; }
+    }
+
+    const noFinal = P.deleteFinal(t);
+    if (noFinal !== t) {
+      const sim = P.similarity(h, noFinal);
+      if (sim > best + 0.001) { best = sim; found = ['finalDeletion']; }
+    }
+
+    if (h.length < t.length && t.length >= 6 && P.similarity(h, t) > 0.55) {
+      if (!found.includes('syllableDeletion') && t.startsWith(h.slice(0, Math.min(2, h.length)))) {
+        best = Math.max(best, 0.72);
+        found.push('syllableDeletion');
+      }
+    }
+
+    return {score: this._ageAdjust(best, found), processes: found, exact: false};
+  }
+
+  _ageAdjust(raw, procs) {
+    if (!procs.length) return raw;
+    let bonus = 0;
+    for (const id of procs) {
+      const p = TurkishPhonology.byId(id);
+      if (!p) continue;
+      bonus = Math.max(bonus, this.age <= p.resolve ? 0.12 : 0.05);
+    }
+    return Math.min(1, raw + bonus);
+  }
+
+  matchPhrase(heard, targets) {
+    if (!targets || !targets.length) return {score: 0, processes: [], exact: false};
+    const words = TurkishPhonology.tokenize(heard);
+    if (!words.length) return {score: 0, processes: [], exact: false};
+
+    let best = {score: 0, processes: [], exact: false};
+    for (const target of targets) {
+      const tw = TurkishPhonology.tokenize(target);
+      if (tw.length > 1) {
+        const m = this.matchWord(words.join(' '), target);
+        if (m.score > best.score) best = m;
+      }
+      for (const w of words) {
+        for (const t of tw) {
+          const m = this.matchWord(w, t);
+          if (m.score > best.score) best = m;
+        }
+      }
+    }
+    return best;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   2. CEVAP DEĞERLENDİRME — hatasız öğrenme
+   --------------------------------------------------------------------------- */
+const FEEDBACK = {
+  exactPraise: [
+    '"{kelime}" kelimesini çok net söyledin!',
+    'Tam istediğim gibi: "{kelime}". Harikasın!',
+    'Bunu duyunca çok mutlu oldum. "{kelime}" mükemmeldi.',
+    'Vay canına, "{kelime}" pırıl pırıl çıktı!',
+    'İşte bu! "{kelime}" tam yerinde.',
+  ],
+  shapingPraise: [
+    'Çok yaklaştın! Benim söyleyişim şöyle: "{kelime}". Sen de çok güzel dedin.',
+    'Neredeyse aynısı! Kulağıma "{kelime}" gibi geldi, aferin.',
+    'Güzel denedin. Ben "{kelime}" diyorum, sen de gittikçe yaklaşıyorsun.',
+    'Bunu duydum ve beğendim. "{kelime}" böyle söyleniyor, sen de çok iyisin.',
+  ],
+  generalPraise: [
+    'Bunu çok güzel anlattın!',
+    'Harika bir cevap, seni dinlemek keyifli.',
+    'Aklına gelenleri söylemen çok hoşuma gitti.',
+    'Bravo, tam olması gerektiği gibi.',
+    'Çok güzel düşünmüşsün!',
+  ],
+  partialPraise: [
+    'Güzel deneme! "{kelime}" biraz zor, ama sen cesurca söyledin.',
+    'Sesini duydum ve bu çok değerli. "{kelime}" böyle söyleniyor.',
+    'Denemen bile büyük iş. Beraber tekrar edelim: "{kelime}".',
+    'İyi gidiyorsun, "{kelime}" yavaş yavaş oturuyor.',
+  ],
+  partialOpen: [
+    'Söylediklerin güzeldi. Biraz daha anlatmak ister misin?',
+    'Seni duydum, teşekkür ederim. Devam edelim.',
+    'Güzel başladın. Bir dahakine biraz daha uzun anlat.',
+  ],
+  retry: [
+    'Bir daha deneyelim, acelemiz yok.',
+    'Buradayım, seni bekliyorum. Tekrar dener misin?',
+    'Hiç sorun değil, birlikte tekrar bakalım.',
+    'Dene bakalım, ben yanındayım.',
+  ],
+  silence: [
+    'Seni duyamadım. Biraz daha yüksek sesle söyler misin?',
+    'Sessiz kaldın galiba. Hazır olduğunda başlayalım.',
+    'Mikrofonuma yakın konuşursan seni daha iyi duyarım.',
+  ],
+  correctChoice: [
+    'Doğru! Kulakların çok keskin.',
+    'Evet, tam olarak bu!',
+    'Bildin! Çok iyi dinledin.',
+    'Harika, doğru olanı seçtin.',
+  ],
+  wrongChoice: [
+    'Bu değildi ama iyi denedin. Bir daha dinleyelim mi?',
+    'Yaklaştın. Tekrar dinleyip deneyelim.',
+    'Olsun, bir kere daha bakalım.',
+  ],
+};
+
+class AnswerEvaluator {
+  constructor(ageMonths, seed) {
+    this.age = ageMonths;
+    this.matcher = new PhonologyMatcher(ageMonths);
+    this.rnd = mulberry32(seed || Date.now());
+  }
+
+  _pick(pool) { return pool[Math.floor(this.rnd() * pool.length)]; }
+
+  evaluate(exercise, heard, confidence, attempt) {
+    const text = TurkishPhonology.normalize(heard);
+
+    if (!text) {
+      return {
+        verdict: 'retry', intelligibility: 0, targetMatch: 0, semanticMatch: 0,
+        processes: [], feedback: this._pick(FEEDBACK.silence),
+        scaffold: this._scaffold(exercise, attempt),
+      };
+    }
+
+    const targets = [];
+    if (exercise.targetWord) targets.push(exercise.targetWord);
+    targets.push(...(exercise.accepted || []));
+
+    const match = targets.length
+      ? this.matcher.matchPhrase(text, targets)
+      : {score: 0, processes: [], exact: false};
+
+    const semantic = this._semantic(exercise, text);
+    const intelligibility = this._intel(confidence, match);
+    const wordCount = TurkishPhonology.tokenize(text).length;
+
+    const verdict = this._decide(exercise, match.score, semantic, attempt, wordCount);
+
+    return {
+      verdict,
+      intelligibility,
+      targetMatch: match.score,
+      semanticMatch: semantic,
+      processes: match.score >= 0.5 ? match.processes : [],
+      feedback: this._feedback(exercise, verdict, match),
+      // 3. denemede kabul ediyoruz ama çocuk son bir kez doğru modeli
+      // duymalı: "Hadi birlikte söyleyelim" adımı burada tetiklenir.
+      scaffold: verdict === 'retry'
+        ? this._scaffold(exercise, attempt)
+        : (attempt >= 3 && exercise.targetWord ? this._scaffold(exercise, 3) : null),
+    };
+  }
+
+  evaluateChoice(exercise, chosen, attempt) {
+    const correct = chosen === exercise.correctOption;
+    return {
+      verdict: correct ? 'pass' : (attempt >= 2 ? 'partial' : 'retry'),
+      intelligibility: 1,
+      targetMatch: correct ? 1 : 0,
+      semanticMatch: correct ? 1 : 0,
+      processes: [],
+      feedback: correct
+        ? this._pick(FEEDBACK.correctChoice)
+        : (attempt >= 2 ? 'Doğrusu bu. Şimdi birlikte bakalım.'
+                        : this._pick(FEEDBACK.wrongChoice)),
+      scaffold: (correct || attempt >= 2) ? null
+        : {level: 'slowModel', instruction: 'Bir daha dinleyelim, kulağını ver.'},
+    };
+  }
+
+  _decide(exercise, targetMatch, semantic, attempt, wordCount) {
+    // Hatasız öğrenme: üçüncü denemede asla başarısız sayılmaz.
+    if (attempt >= 3) return 'partial';
+
+    if (isOpenEnded(exercise.type)) {
+      if (wordCount >= 2 && semantic >= 0.45) return 'pass';
+      if (wordCount >= 1 && semantic >= 0.2) return 'partial';
+      if (wordCount >= 3) return 'partial';
+      return 'retry';
+    }
+
+    if (targetMatch >= 0.7 || semantic >= 0.6) return 'pass';
+    if (targetMatch >= 0.45 || semantic >= 0.35) return 'partial';
+    return 'retry';
+  }
+
+  _intel(confidence, match) {
+    if (!confidence || confidence <= 0) {
+      return match.exact ? 0.85 : Math.min(0.9, match.score * 0.8);
+    }
+    return Math.max(0, Math.min(1, confidence * 0.65 + match.score * 0.35));
+  }
+
+  _semantic(exercise, text) {
+    const words = new Set(TurkishPhonology.tokenize(text).map(TurkishPhonology.stem));
+    if (!words.size) return 0;
+
+    if (!(exercise.accepted || []).length && !exercise.targetWord) {
+      const n = words.size;
+      if (n >= 5) return 0.75;
+      if (n >= 3) return 0.6;
+      if (n >= 2) return 0.45;
+      return 0.25;
+    }
+
+    const accepted = new Set();
+    if (exercise.targetWord) {
+      TurkishPhonology.tokenize(exercise.targetWord)
+        .map(TurkishPhonology.stem).forEach(w => accepted.add(w));
+    }
+    for (const a of (exercise.accepted || [])) {
+      TurkishPhonology.tokenize(a).map(TurkishPhonology.stem).forEach(w => accepted.add(w));
+    }
+    if (!accepted.size) return 0.4;
+
+    let hits = 0;
+    for (const w of words) if (accepted.has(w)) hits++;
+    if (hits > 0) return Math.min(1, 0.55 + hits * 0.2);
+
+    let fuzzy = 0;
+    for (const w of words) {
+      for (const a of accepted) {
+        fuzzy = Math.max(fuzzy, TurkishPhonology.similarity(w, a));
+      }
+    }
+    if (fuzzy >= 0.75) return 0.5;
+    if (fuzzy >= 0.6) return 0.35;
+    return words.size >= 3 ? 0.3 : 0.12;
+  }
+
+  _scaffold(exercise, attempt) {
+    if (attempt <= 1) {
+      return {
+        level: 'slowModel',
+        instruction: exercise.targetWord
+          ? 'Yavaşça tekrar söyleyeyim, sonra sen dene.'
+          : 'Acele yok, bir daha deneyelim.',
+        hint: exercise.targetWord || null,
+      };
+    }
+    if (attempt === 2) {
+      if (exercise.targetWord && exercise.targetWord.length >= 3) {
+        return {
+          level: 'choices',
+          instruction: 'İpucu vereyim mi? İlk hecesi şöyle:',
+          hint: firstSyllable(exercise.targetWord),
+        };
+      }
+      return {
+        level: 'choices',
+        instruction: 'Tek kelime bile olur, aklına ilk geleni söyle.',
+        hint: null,
+      };
+    }
+    return {
+      level: 'together',
+      instruction: 'Hadi birlikte söyleyelim!',
+      hint: exercise.targetWord || null,
+    };
+  }
+
+  _feedback(exercise, verdict, match) {
+    const w = exercise.targetWord;
+    if (verdict === 'pass') {
+      if (match.exact && w) return this._pick(FEEDBACK.exactPraise).replace('{kelime}', w);
+      if (match.processes.length && w) return this._pick(FEEDBACK.shapingPraise).replace('{kelime}', w);
+      return this._pick(FEEDBACK.generalPraise);
+    }
+    if (verdict === 'partial') {
+      return w ? this._pick(FEEDBACK.partialPraise).replace('{kelime}', w)
+               : this._pick(FEEDBACK.partialOpen);
+    }
+    return this._pick(FEEDBACK.retry);
+  }
+}
+
+function firstSyllable(word) {
+  const w = TurkishPhonology.normalize(word);
+  let seenVowel = false;
+  for (let i = 0; i < w.length; i++) {
+    if (TurkishPhonology.isVowel(w[i])) seenVowel = true;
+    else if (seenVowel) return w.slice(0, i + 1) + '...';
+  }
+  return (w[0] || '') + '...';
+}
+
+const isOpenEnded = t =>
+  t === 'answerQuestion' || t === 'retellStory' || t === 'emotionMatch';
+
+const needsVoice = t => t !== 'choosePicture' && t !== 'minimalPair';
+
+/* ---------------------------------------------------------------------------
+   3. DİYALOG ÜRETİM MOTORU
+   --------------------------------------------------------------------------- */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+class DialogueEngine {
+  constructor(ctx) {
+    this.ctx = ctx;
+    this.rnd = mulberry32(ctx.seed || 1);
+    this.usedPrompts = new Set();
+    this.usedSlots = new Set();
+  }
+
+  buildLesson(lesson) {
+    const templates = lesson.templateIds
+      .map(id => TEMPLATES.find(t => t.id === id))
+      .filter(Boolean);
+    if (!templates.length) return [];
+
+    return this._interleave(templates, lesson.exerciseCount)
+      .map(t => this._materialize(t));
+  }
+
+  _templateWeight(t) {
+    let w = 3;
+    for (const p of (t.targetPhonemes || [])) {
+      const m = this.ctx.mastery[p];
+      if (!m) { w += 2; continue; }
+      if (m.score < 0.4) w += 3;
+      else if (m.score < 0.7) w += 1;
+      else if (isMastered(m)) w -= 1;
+      if (isDue(m)) w += 2;
+    }
+    const ageGap = t.difficulty * 12 + 24 - this.ctx.ageMonths;
+    if (ageGap > 18) w -= 2;
+    return Math.max(1, Math.min(12, w));
+  }
+
+  _interleave(templates, count) {
+    const weighted = [];
+    for (const t of templates) {
+      const w = this._templateWeight(t);
+      for (let i = 0; i < w; i++) weighted.push(t);
+    }
+    const out = [];
+    let last = null;
+    for (let i = 0; i < count; i++) {
+      const pool = weighted.filter(t => !last || t.id !== last.id);
+      const src = pool.length ? pool : weighted;
+      const pick = src[Math.floor(this.rnd() * src.length)];
+      out.push(pick);
+      last = pick;
+    }
+    out.sort((a, b) => a.difficulty - b.difficulty);
+    if (out.length > 2) {
+      const mid = out.pop();
+      out.splice(Math.floor(out.length / 2) + 1, 0, mid);
+    }
+    return out;
+  }
+
+  _pickPrompt(t) {
+    const fresh = t.prompts.filter(p =>
+      !this.usedPrompts.has(t.id + '|' + p) &&
+      !this.ctx.recentPrompts.has(t.id + '|' + p));
+    const fallback = t.prompts.filter(p => !this.usedPrompts.has(t.id + '|' + p));
+    const pool = fresh.length ? fresh : (fallback.length ? fallback : t.prompts);
+    const chosen = pool[Math.floor(this.rnd() * pool.length)];
+    this.usedPrompts.add(t.id + '|' + chosen);
+    return chosen;
+  }
+
+  _pickSlot(templateId, key, values) {
+    const k = templateId + '|' + key;
+    const fresh = values.filter(v =>
+      !this.usedSlots.has(k + '|' + v) &&
+      !this.ctx.recentWords.has(String(v).split('|')[0]));
+    const fallback = values.filter(v => !this.usedSlots.has(k + '|' + v));
+    const pool = fresh.length ? fresh : (fallback.length ? fallback : values);
+    const chosen = pool[Math.floor(this.rnd() * pool.length)];
+    this.usedSlots.add(k + '|' + chosen);
+    return chosen;
+  }
+
+  _apply(prompt, fills) {
+    let out = prompt;
+    for (const [k, v] of Object.entries(fills)) {
+      out = out.split('{' + k + '}').join(String(v).split('|')[0]);
+    }
+    return out.split('{ad}').join(this.ctx.childName).replace(/\s+/g, ' ').trim();
+  }
+
+  _materialize(t) {
+    const prompt = this._pickPrompt(t);
+    const fills = {};
+    for (const s of (t.slots || [])) {
+      fills[s.key] = this._pickSlot(t.id, s.key, s.values);
+    }
+
+    const base = {
+      templateId: t.id, type: t.type, domain: t.domain,
+      emoji: t.emoji || '', targetPhonemes: t.targetPhonemes || [],
+      difficulty: t.difficulty, options: [], correctOption: 0,
+      targetWord: null, accepted: [],
+    };
+
+    switch (t.type) {
+      case 'listenRepeat': {
+        const word = fills['kelime'] || '';
+        return {...base, prompt: this._apply(prompt, fills),
+                targetWord: word, accepted: [word]};
+      }
+      case 'namePicture': {
+        const [emoji, word] = String(fills['görsel'] || '❓|şey').split('|');
+        return {...base, prompt: this._apply(prompt, {}),
+                targetWord: word, accepted: [word], emoji};
+      }
+      case 'choosePicture': {
+        const parts = String(fills['set'] || 'kedi|🐱🐶🐦|0').split('|');
+        const options = Array.from(parts[1] || '');
+        const correct = Math.max(0, Math.min(options.length - 1, parseInt(parts[2] || '0', 10)));
+        return {...base, prompt: this._apply(prompt, {'hedef': parts[0]}),
+                targetWord: parts[0], accepted: [parts[0]],
+                options, correctOption: correct, emoji: ''};
+      }
+      case 'minimalPair': {
+        const parts = String(fills['çift'] || 'tam|dam|0').split('|');
+        const correct = parseInt(parts[2] || '0', 10);
+        const flip = this.rnd() < 0.5;
+        const options = flip ? [parts[1], parts[0]] : [parts[0], parts[1]];
+        const ci = flip ? (1 - correct) : correct;
+        return {...base, prompt: this._apply(prompt, {}) + ' ' + options[ci],
+                targetWord: options[ci], accepted: [options[ci]],
+                options, correctOption: ci};
+      }
+      case 'completeSentence': {
+        const parts = String(fills['cümle'] || '').split('|');
+        const answer = (parts[1] || '').trim();
+        return {...base, prompt: this._apply(prompt, {'cümle': parts[0].trim()}),
+                targetWord: answer || null, accepted: answer ? [answer] : []};
+      }
+      case 'emotionMatch': {
+        const parts = String(fills['durum'] || '').split('|');
+        return {...base, prompt: this._apply(prompt, {'durum': parts[0].trim()}),
+                accepted: parts.slice(1).map(s => s.trim()), emoji: '💛'};
+      }
+      case 'retellStory':
+        return {...base, prompt: this._apply(prompt, {'hikâye': fills['hikâye'] || ''}),
+                emoji: '📖'};
+      case 'tongueTwister': {
+        const line = fills['tekerleme'] || '';
+        return {...base, prompt: this._apply(prompt, {'tekerleme': line}),
+                targetWord: line, accepted: [line], emoji: '🎵'};
+      }
+      default:
+        return {...base, prompt: this._apply(prompt, fills)};
+    }
+  }
+
+  opener(unitTitle) {
+    const l = OPENERS[Math.floor(this.rnd() * OPENERS.length)];
+    return l.split('{ad}').join(this.ctx.childName).split('{ünite}').join(unitTitle);
+  }
+  closer() {
+    const l = CLOSERS[Math.floor(this.rnd() * CLOSERS.length)];
+    return l.split('{ad}').join(this.ctx.childName);
+  }
+  transition() {
+    return TRANSITIONS[Math.floor(this.rnd() * TRANSITIONS.length)];
+  }
+
+  static combinationCount() {
+    let total = 0;
+    for (const t of TEMPLATES) {
+      let prod = 1;
+      for (const s of (t.slots || [])) prod *= s.values.length;
+      total += t.prompts.length * prod;
+    }
+    return total;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   4. USTALIK VE İLERLEME
+   --------------------------------------------------------------------------- */
+const BOX_INTERVAL_DAYS = [0, 1, 3, 7, 16];
+
+const isMastered = m => m.score >= 0.8 && m.box >= 3;
+
+function isDue(m) {
+  const days = BOX_INTERVAL_DAYS[Math.max(0, Math.min(4, m.box))];
+  return (Date.now() - m.lastSeen) / 86400000 >= days;
+}
+
+function emptyProgress() {
+  return {
+    lessons: {}, mastery: {}, processes: {},
+    recentPrompts: [], recentWords: [],
+    totalStars: 0, streakDays: 0, lastActiveDay: null,
+  };
+}
+
+const ProgressStore = {
+  key: id => 'tb_progress_' + id,
+
+  load(profileId) {
+    try {
+      const raw = localStorage.getItem(this.key(profileId));
+      if (!raw) return emptyProgress();
+      return Object.assign(emptyProgress(), JSON.parse(raw));
+    } catch (e) { return emptyProgress(); }
+  },
+
+  save(profileId, p) {
+    try { localStorage.setItem(this.key(profileId), JSON.stringify(p)); } catch (e) {}
+  },
+
+  clear(profileId) {
+    try { localStorage.removeItem(this.key(profileId)); } catch (e) {}
+  },
+
+  applyResult(current, result) {
+    const p = JSON.parse(JSON.stringify(current));
+
+    const prev = p.lessons[result.lessonId];
+    const passed = successRate(result) >= 0.6;
+    const stars = totalStars(result);
+
+    if (passed) {
+      p.lessons[result.lessonId] = {
+        lessonId: result.lessonId,
+        bestStars: Math.max(prev ? prev.bestStars : 0, stars),
+        completions: (prev ? prev.completions : 0) + 1,
+        lastCompletedAt: Date.now(),
+      };
+    } else if (!prev) {
+      p.lessons[result.lessonId] = {
+        lessonId: result.lessonId, bestStars: stars,
+        completions: 0, lastCompletedAt: Date.now(),
+      };
+    }
+
+    // Ses başına ders başına TEK kutu adımı — aksi hâlde ustalık tek
+    // derste tavana vurur ve aralıklı tekrar anlamsızlaşır.
+    const byPhoneme = {};
+    for (const r of result.results) {
+      for (const ph of (r.exercise.targetPhonemes || [])) {
+        (byPhoneme[ph] = byPhoneme[ph] || []).push(r);
+      }
+    }
+
+    for (const [ph, rs] of Object.entries(byPhoneme)) {
+      const passes = rs.filter(r => r.verdict === 'pass').length;
+      const partials = rs.filter(r => r.verdict === 'partial').length;
+      const rate = (passes + partials * 0.5) / rs.length;
+      const success = rate >= 0.6;
+      const delta = (rate - 0.45) * 0.32;
+
+      const m = p.mastery[ph];
+      if (!m) {
+        p.mastery[ph] = {
+          phoneme: ph, score: Math.max(0, Math.min(1, 0.4 + delta)),
+          box: success ? 1 : 0, lastSeen: Date.now(),
+          attempts: rs.length, successes: passes,
+        };
+      } else {
+        p.mastery[ph] = {
+          phoneme: ph,
+          score: Math.max(0, Math.min(1, m.score + delta)),
+          box: success ? Math.min(4, m.box + 1) : Math.max(0, m.box - 1),
+          lastSeen: Date.now(),
+          attempts: m.attempts + rs.length,
+          successes: m.successes + passes,
+        };
+      }
+    }
+
+    // Gözlenen fonolojik süreçler kalıcı tutulur; uzman paneli bunları okur.
+    p.processes = p.processes || {};
+    for (const [id, n] of Object.entries(processCounts(result))) {
+      const prev = p.processes[id] || {count: 0, lessons: 0};
+      p.processes[id] = {
+        count: prev.count + n,
+        lessons: prev.lessons + 1,
+        lastSeen: Date.now(),
+      };
+    }
+
+    const prompts = new Set(p.recentPrompts);
+    const words = new Set(p.recentWords);
+    for (const r of result.results) {
+      prompts.add(r.exercise.templateId + '|' + r.exercise.prompt);
+      if (r.exercise.targetWord) words.add(r.exercise.targetWord);
+    }
+    p.recentPrompts = [...prompts].slice(-40);
+    p.recentWords = [...words].slice(-40);
+
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    if (!p.lastActiveDay) {
+      p.streakDays = 1;
+    } else {
+      const last = new Date(p.lastActiveDay); last.setHours(0, 0, 0, 0);
+      const diff = Math.round((today - last) / 86400000);
+      if (diff === 1) p.streakDays += 1;
+      else if (diff > 1) p.streakDays = 1;
+    }
+    p.lastActiveDay = today.getTime();
+    p.totalStars += stars;
+    return p;
+  },
+};
+
+const totalStars = result => result.results.reduce((a, r) => a + starsFor(r), 0);
+const maxStars = result => result.results.length * 3;
+
+function starsFor(r) {
+  if (r.verdict === 'pass') return r.attempts <= 1 ? 3 : 2;
+  if (r.verdict === 'partial') return 1;
+  return 0;
+}
+
+const successRate = result => result.results.length
+  ? result.results.filter(r => r.verdict !== 'retry').length / result.results.length
+  : 0;
+
+function strugglingPhonemes(result) {
+  const counts = {};
+  for (const r of result.results.filter(r => r.verdict !== 'pass')) {
+    for (const p of (r.exercise.targetPhonemes || [])) counts[p] = (counts[p] || 0) + 1;
+  }
+  return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
+}
+
+function processCounts(result) {
+  const m = {};
+  for (const r of result.results) {
+    for (const p of (r.processes || [])) m[p] = (m[p] || 0) + 1;
+  }
+  return m;
+}
+
+function meanIntelligibility(result) {
+  const v = result.results.filter(r => needsVoice(r.exercise.type));
+  if (!v.length) return 0;
+  return v.reduce((a, r) => a + r.intelligibility, 0) / v.length;
+}
+
+/* --- İlerleme sorguları --- */
+const isLessonComplete = (p, id) => !!(p.lessons[id] && p.lessons[id].completions > 0);
+const starsOfLesson = (p, id) => (p.lessons[id] || {}).bestStars || 0;
+
+function isUnitUnlocked(p, unit) {
+  const i = UNITS.findIndex(u => u.id === unit.id);
+  if (i <= 0) return true;
+  return UNITS[i - 1].lessons.every(l => isLessonComplete(p, l.id));
+}
+
+function isLessonUnlocked(p, unit, lesson) {
+  if (!isUnitUnlocked(p, unit)) return false;
+  if (lesson.index === 0) return true;
+  return isLessonComplete(p, unit.lessons[lesson.index - 1].id);
+}
+
+function nextLesson(p) {
+  for (const u of UNITS) {
+    if (!isUnitUnlocked(p, u)) continue;
+    for (const l of u.lessons) if (!isLessonComplete(p, l.id)) return l;
+  }
+  return null;
+}
+
+function overallCompletion(p) {
+  const all = UNITS.flatMap(u => u.lessons);
+  if (!all.length) return 0;
+  return all.filter(l => isLessonComplete(p, l.id)).length / all.length;
+}
+
+function weakestPhonemes(p) {
+  return Object.values(p.mastery).filter(m => m.attempts >= 2)
+    .sort((a, b) => a.score - b.score).slice(0, 5);
+}
+
+function topProcesses(p, limit) {
+  return Object.entries(p.processes || {})
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, limit || 3)
+    .map(([id, v]) => ({id, ...v, meta: TurkishPhonology.byId(id)}))
+    .filter(x => x.meta);
+}
+
+function lateProcesses(p, ageMonths) {
+  return topProcesses(p, 8).filter(x => ageMonths > x.meta.resolve + 6);
+}
+
+function averageMastery(p) {
+  const v = Object.values(p.mastery);
+  return v.length ? v.reduce((a, m) => a + m.score, 0) / v.length : 0;
+}
+
+/* ===========================================================================
+   Talk Buddy — Tarayıcı ses katmanı
+   Seslendirme: Web Speech Synthesis (her yerde çalışır)
+   Tanıma     : Web Speech Recognition (Chrome/Edge; yoksa yazılı yedek)
+   =========================================================================== */
+
+const Speech = (() => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+  const state = {
+    rate: 0.44,
+    pitch: 1.18,
+    level: 0,
+    listening: false,
+    voice: null,
+    micGranted: null,
+    onLevel: null,
+  };
+
+  let recognition = null;
+  let audioCtx = null;
+  let analyser = null;
+  let micStream = null;
+  let levelRaf = null;
+
+  const supportsRecognition = () => SR !== null;
+  const supportsSynthesis = () => 'speechSynthesis' in window;
+
+  function pickTurkishVoice() {
+    if (!supportsSynthesis()) return null;
+    const voices = speechSynthesis.getVoices();
+    if (!voices.length) return null;
+    return voices.find(v => v.lang === 'tr-TR')
+        || voices.find(v => v.lang && v.lang.startsWith('tr'))
+        || null;
+  }
+
+  if (supportsSynthesis()) {
+    const load = () => { state.voice = pickTurkishVoice(); };
+    load();
+    speechSynthesis.addEventListener('voiceschanged', load);
+  }
+
+  function applySettings(s) {
+    if (typeof s.rate === 'number') state.rate = s.rate;
+    if (typeof s.pitch === 'number') state.pitch = s.pitch;
+  }
+
+  /* --- Seslendirme -------------------------------------------------------- */
+  function speak(text) {
+    return new Promise(resolve => {
+      if (!text || !supportsSynthesis()) { resolve(); return; }
+      try {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'tr-TR';
+        if (state.voice) u.voice = state.voice;
+        // Web Speech hız aralığı 0.1–10; uygulamadaki 0.25–0.75 aralığını eşle.
+        u.rate = Math.max(0.5, Math.min(2, state.rate * 2.1));
+        u.pitch = Math.max(0, Math.min(2, state.pitch));
+        u.volume = 1;
+        let done = false;
+        const finish = () => { if (!done) { done = true; resolve(); } };
+        u.onend = finish;
+        u.onerror = finish;
+        // Emniyet supabı: bazı tarayıcılarda onend tetiklenmiyor.
+        setTimeout(finish, Math.max(1800, text.length * 90));
+        speechSynthesis.speak(u);
+      } catch (e) { resolve(); }
+    });
+  }
+
+  const silence = () => { try { speechSynthesis.cancel(); } catch (e) {} };
+
+  /* --- Mikrofon seviyesi (dalga animasyonu) -------------------------------- */
+  async function startLevelMeter() {
+    if (analyser) return;
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({audio: true});
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = audioCtx.createMediaStreamSource(micStream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      src.connect(analyser);
+
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        if (!analyser) return;
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / data.length);
+        state.level = Math.min(1, rms * 4);
+        if (state.onLevel) state.onLevel(state.level);
+        levelRaf = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (e) {
+      analyser = null;
+    }
+  }
+
+  function stopLevelMeter() {
+    if (levelRaf) cancelAnimationFrame(levelRaf);
+    levelRaf = null;
+    if (micStream) micStream.getTracks().forEach(t => t.stop());
+    micStream = null;
+    if (audioCtx) { try { audioCtx.close(); } catch (e) {} }
+    audioCtx = null;
+    analyser = null;
+    state.level = 0;
+    if (state.onLevel) state.onLevel(0);
+  }
+
+  /* --- İzin --------------------------------------------------------------- */
+  async function requestMic() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      state.micGranted = false;
+      return false;
+    }
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({audio: true});
+      s.getTracks().forEach(t => t.stop());
+      state.micGranted = true;
+      return true;
+    } catch (e) {
+      state.micGranted = false;
+      return false;
+    }
+  }
+
+  /* --- Tanıma ------------------------------------------------------------- */
+  function listen(onPartial, timeoutMs) {
+    return new Promise(resolve => {
+      if (!supportsRecognition()) {
+        resolve({text: '', confidence: 0, unsupported: true});
+        return;
+      }
+
+      let settled = false;
+      let lastText = '';
+      let lastConfidence = 0;
+
+      const done = (payload) => {
+        if (settled) return;
+        settled = true;
+        state.listening = false;
+        stopLevelMeter();
+        clearTimeout(guard);
+        try { recognition && recognition.stop(); } catch (e) {}
+        recognition = null;
+        resolve(payload);
+      };
+
+      try {
+        recognition = new SR();
+      } catch (e) {
+        resolve({text: '', confidence: 0, unsupported: true});
+        return;
+      }
+
+      recognition.lang = 'tr-TR';
+      recognition.interimResults = true;
+      recognition.continuous = false;
+      recognition.maxAlternatives = 3;
+
+      recognition.onresult = (ev) => {
+        let interim = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const res = ev.results[i];
+          const alt = res[0];
+          if (res.isFinal) {
+            lastText = alt.transcript.trim();
+            lastConfidence = alt.confidence || 0;
+          } else {
+            interim += alt.transcript;
+          }
+        }
+        if (interim && onPartial) onPartial(interim.trim());
+        if (lastText) {
+          if (onPartial) onPartial(lastText);
+          done({text: lastText, confidence: lastConfidence});
+        }
+      };
+
+      recognition.onerror = (ev) => {
+        const denied = ev.error === 'not-allowed' || ev.error === 'service-not-allowed';
+        if (denied) state.micGranted = false;
+        done({text: lastText, confidence: lastConfidence, denied});
+      };
+
+      recognition.onend = () => done({text: lastText, confidence: lastConfidence});
+
+      const guard = setTimeout(
+        () => done({text: lastText, confidence: lastConfidence, timedOut: true}),
+        timeoutMs || 12000
+      );
+
+      state.listening = true;
+      startLevelMeter();
+      try {
+        recognition.start();
+      } catch (e) {
+        done({text: '', confidence: 0});
+      }
+    });
+  }
+
+  function cancel() {
+    try { recognition && recognition.abort(); } catch (e) {}
+    recognition = null;
+    state.listening = false;
+    stopLevelMeter();
+  }
+
+  return {
+    state, applySettings, speak, silence, listen, cancel, requestMic,
+    supportsRecognition, supportsSynthesis,
+    get level() { return state.level; },
+    set onLevel(fn) { state.onLevel = fn; },
+  };
+})();
+
+/* ===========================================================================
+   Talk Buddy — Demo uygulaması (ekranlar, durum, navigasyon)
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   Durum
+   --------------------------------------------------------------------------- */
+const S = {
+  screen: 'login',
+  shell: null,
+  tab: 0,
+  role: 'child',
+  activeChildId: 'c1',
+  detailTab: 0,
+  studentId: 'c1',
+  range: 30,
+  showKey: false,
+  settings: {
+    provider: 'offline', apiKey: '', useProxy: false, proxyUrl: '',
+    rate: 0.44, pitch: 1.18, limit: 12, silence: 6,
+    redact: true, store: true, voiceMode: 'auto',
+  },
+  pins: {parent: null, teacher: null},
+  lesson: null,
+};
+
+const CHILDREN = [
+  {id:'c1', name:'Elif',   ageMonths:52, avatar:'🐰', classroomId:'k1'},
+  {id:'c2', name:'Kerem',  ageMonths:41, avatar:'🦊', classroomId:'k1'},
+  {id:'c3', name:'Deniz',  ageMonths:67, avatar:'🐢', classroomId:'k1'},
+  {id:'c4', name:'Zeynep', ageMonths:35, avatar:'🐥', classroomId:'k2'},
+  {id:'c5', name:'Mert',   ageMonths:58, avatar:'🦕', classroomId:'k2'},
+];
+
+const CLASSROOMS = [
+  {id:'k1', name:'Papatya Sınıfı', teacherName:'Aynur Yörük'},
+  {id:'k2', name:'Menekşe Sınıfı', teacherName:'Aynur Yörük'},
+];
+
+const PROVIDERS = {
+  offline: {label:'Çevrimdışı Demo', icon:'📴', color:'#5A6079', key:false,
+    desc:'API anahtarı gerekmez. Tüm dersler çevrimdışı çalışır.'},
+  gemini:  {label:'Google Gemini', icon:'✨', color:'#41C9FF', key:true,
+    desc:'Ücretsiz kullanım kotası vardır. Düşük gecikme.',
+    hint:'AIza ile başlar', url:'aistudio.google.com/apikey'},
+  claude:  {label:'Anthropic Claude', icon:'✨', color:'#FF7A6B', key:true,
+    desc:'Uzun bağlam ve tutarlı Türkçe.',
+    hint:'sk-ant- ile başlar', url:'console.anthropic.com'},
+  openai:  {label:'OpenAI', icon:'✨', color:'#2ED3A5', key:true,
+    desc:'Yaygın kullanılan alternatif.',
+    hint:'sk- ile başlar', url:'platform.openai.com/api-keys'},
+};
+
+/* --- Kalıcılık ------------------------------------------------------------ */
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem('tb_prefs');
+    if (raw) Object.assign(S.settings, JSON.parse(raw));
+    const pins = localStorage.getItem('tb_pins');
+    if (pins) Object.assign(S.pins, JSON.parse(pins));
+    const ac = localStorage.getItem('tb_active_child');
+    if (ac) S.activeChildId = ac;
+  } catch (e) {}
+}
+function savePrefs() {
+  try {
+    localStorage.setItem('tb_prefs', JSON.stringify(S.settings));
+    localStorage.setItem('tb_pins', JSON.stringify(S.pins));
+    localStorage.setItem('tb_active_child', S.activeChildId);
+  } catch (e) {}
+}
+
+const activeChild = () =>
+  CHILDREN.find(c => c.id === S.activeChildId) || CHILDREN[0];
+
+const progressOf = id => ProgressStore.load(id);
+const activeProgress = () => progressOf(S.activeChildId);
+
+function ageLabel(months) {
+  const y = Math.floor(months / 12), m = months % 12;
+  if (y === 0) return m + ' aylık';
+  return m === 0 ? y + ' yaş' : y + ' yaş ' + m + ' ay';
+}
+
+/* --- Yardımcılar ---------------------------------------------------------- */
+const esc = t => String(t == null ? '' : t)
+  .replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const scoreHex = v => v >= .75 ? '#22C55E' : v >= .5 ? '#FFC53D'
+                    : v >= .3 ? '#F59E0B' : '#EF4444';
+
+function buddy(mood, size) {
+  const C = {idle:['#8D99FF','#5B6CFF'], listening:['#6FE3C2','#2ED3A5'],
+             talking:['#8D99FF','#5B6CFF'], thinking:['#C4A5FF','#A678FF'],
+             happy:['#FFD97A','#FFC53D']}[mood] || ['#8D99FF','#5B6CFF'];
+  const eye = size * .15, pup = size * .08;
+  let mouth;
+  if (mood === 'talking')        mouth = `<div class="m-talk" style="width:${size*.22}px;margin-top:${size*.08}px"></div>`;
+  else if (mood === 'listening') mouth = `<div class="m-o" style="width:${size*.11}px;height:${size*.11}px;margin-top:${size*.08}px"></div>`;
+  else if (mood === 'thinking')  mouth = `<div style="width:${size*.2}px;height:${size*.035}px;background:var(--ink);border-radius:3px;margin-top:${size*.1}px;transform:rotate(-6deg)"></div>`;
+  else                           mouth = `<div class="m-smile" style="width:${size*.3}px;height:${size*.14}px;margin-top:${size*.07}px"></div>`;
+  const rings = mood === 'listening'
+    ? [0,.53,1.06].map(d => `<div class="ring" style="width:${size}px;height:${size}px;border-color:${C[1]};animation-delay:${d}s"></div>`).join('') : '';
+  const cheeks = (mood === 'happy' || mood === 'talking')
+    ? `<div class="cheek" style="width:${size*.13}px;height:${size*.13}px;left:${size*.1}px;top:${size*.52}px"></div>
+       <div class="cheek" style="width:${size*.13}px;height:${size*.13}px;right:${size*.1}px;top:${size*.52}px"></div>` : '';
+  return `<div class="buddy" style="width:${size*1.5}px;height:${size*1.5}px">${rings}
+    <div class="face" style="width:${size}px;height:${size}px;
+      background:linear-gradient(135deg,${C[0]},${C[1]});box-shadow:0 14px 40px ${C[1]}59">${cheeks}
+      <div class="row" style="gap:${size*.14}px;margin-top:${size*.05}px">
+        <div class="eye" style="width:${eye}px;height:${eye}px"><div class="pupil" style="width:${pup}px;height:${pup}px"></div></div>
+        <div class="eye" style="width:${eye}px;height:${eye}px"><div class="pupil" style="width:${pup}px;height:${pup}px"></div></div>
+      </div>${mouth}</div></div>`;
+}
+
+function ring(v, size) {
+  const st = size * .11, r = (size - st) / 2, c = 2 * Math.PI * r, col = scoreHex(v);
+  return `<svg width="${size}" height="${size}" style="flex-shrink:0">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#E6E8F0" stroke-width="${st}"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${col}" stroke-width="${st}"
+      stroke-linecap="round" stroke-dasharray="${c*v} ${c}" transform="rotate(-90 ${size/2} ${size/2})"/>
+    <text x="50%" y="50%" text-anchor="middle" dy=".35em" font-size="${size*.26}" font-weight="800"
+      fill="${col}" font-family="system-ui,sans-serif">%${Math.round(v*100)}</text></svg>`;
+}
+
+function bars(data, w, h, threshold) {
+  w = w || 320; h = h || 120; threshold = threshold || 5;
+  const pad = 4, iw = w - pad * 2, ih = h - pad * 2;
+  const max = Math.max.apply(null, data.concat([1]));
+  const gap = iw / data.length, bw = gap * .6;
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">
+    ${data.map((v, i) => {
+      const bh = Math.max(3, v / max * ih);
+      return `<rect x="${pad+i*gap+(gap-bw)/2}" y="${pad+ih-bh}" width="${bw}" height="${bh}" rx="3"
+        fill="${v >= threshold ? '#5B6CFF' : '#E6E8F0'}"/>`;
+    }).join('')}</svg>`;
+}
+
+function stat(icon, label, val, unit, color) {
+  return `<div class="card" style="padding:12px">
+    <div style="font-size:15px;color:${color}">${icon}</div>
+    <div style="font-size:20px;font-weight:800;margin-top:8px;line-height:1">${val}</div>
+    <div class="sub" style="font-size:10px">${unit}</div>
+    <div class="sub" style="font-size:11.5px;font-weight:600;margin-top:4px">${label}</div></div>`;
+}
+
+const maskKey = k => k.length <= 10 ? '•'.repeat(k.length)
+  : k.slice(0, 6) + '••••••••••••' + k.slice(-4);
+const rateLabel = v => v <= .33 ? 'Çok yavaş' : v <= .42 ? 'Yavaş'
+  : v <= .52 ? 'Normal' : v <= .63 ? 'Hızlı' : 'Çok hızlı';
+const pitchLabel = v => v <= .95 ? 'Kalın' : v <= 1.15 ? 'Doğal'
+  : v <= 1.35 ? 'Neşeli' : 'Çok ince';
+
+/* ===========================================================================
+   DERS OTURUMU — Dart'taki LessonController'ın karşılığı
+   =========================================================================== */
+class LessonSession {
+  constructor(lessonId) {
+    this.lesson = lessonById(lessonId);
+    this.unit = unitById(this.lesson.unitId);
+    const child = activeChild();
+    const p = activeProgress();
+
+    this.engine = new DialogueEngine({
+      childName: child.name,
+      ageMonths: child.ageMonths,
+      mastery: p.mastery,
+      recentPrompts: new Set(p.recentPrompts),
+      recentWords: new Set(p.recentWords),
+      seed: Math.floor(Date.now() / 1000),
+    });
+    this.evaluator = new AnswerEvaluator(child.ageMonths, Date.now());
+
+    this.exercises = this.engine.buildLesson(this.lesson);
+    this.index = 0;
+    this.attempt = 1;
+    this.results = [];
+    this.stars = 0;
+    this.phase = 'intro';
+    this.partial = '';
+    this.heard = '';
+    this.evaluation = null;
+    this.banner = this.engine.opener(this.unit.title);
+    this.startedAt = Date.now();
+    this.busy = false;
+    this.voiceMode = Speech.supportsRecognition() ? 'voice' : 'text';
+  }
+
+  get current() { return this.exercises[this.index] || null; }
+  get total() { return this.exercises.length; }
+  get progress() { return this.total ? this.index / this.total : 0; }
+
+  async start() {
+    await this._say(this.banner);
+    this.banner = null;
+    await this._present();
+  }
+
+  async _say(text) {
+    if (!text) return;
+    this.phase = 'speaking';
+    render();
+    await Speech.speak(text);
+  }
+
+  async _present() {
+    const ex = this.current;
+    if (!ex) { await this._finish(); return; }
+    this.partial = ''; this.heard = ''; this.evaluation = null;
+    await this._say(ex.prompt);
+    this.phase = 'awaiting';
+    render();
+    if (needsVoice(ex.type) && this.voiceMode === 'voice') {
+      await this.listen();
+    }
+  }
+
+  async listen() {
+    const ex = this.current;
+    if (!ex || this.busy) return;
+    this.busy = true;
+    this.phase = 'listening';
+    this.partial = '';
+    render();
+
+    const res = await Speech.listen(p => { this.partial = p; render(); }, 12000);
+
+    if (res.unsupported) {
+      this.voiceMode = 'text';
+      this.phase = 'awaiting';
+      this.busy = false;
+      render();
+      return;
+    }
+    if (res.denied) {
+      this.voiceMode = 'text';
+      this.phase = 'micDenied';
+      this.busy = false;
+      render();
+      return;
+    }
+    this.busy = false;
+    await this.submitSpeech(res.text, res.confidence);
+  }
+
+  async submitSpeech(text, confidence) {
+    const ex = this.current;
+    if (!ex) return;
+    this.heard = text;
+    this.partial = '';
+    this.phase = 'evaluating';
+    render();
+    await sleep(320);
+    const evaluation = this.evaluator.evaluate(ex, text, confidence || 0, this.attempt);
+    await this._apply(ex, evaluation);
+  }
+
+  async submitChoice(chosen) {
+    const ex = this.current;
+    if (!ex || this.busy) return;
+    this.busy = true;
+    this.phase = 'evaluating';
+    render();
+    await sleep(260);
+    const evaluation = this.evaluator.evaluateChoice(ex, chosen, this.attempt);
+    this.busy = false;
+    await this._apply(ex, evaluation);
+  }
+
+  async _apply(ex, evaluation) {
+    this.evaluation = evaluation;
+
+    if (evaluation.verdict === 'retry') {
+      this.phase = 'scaffolding';
+      render();
+      await this._say(evaluation.feedback);
+      const sc = evaluation.scaffold;
+      if (sc) {
+        await this._say(sc.instruction);
+        if (sc.hint) await this._say(sc.hint);
+      }
+      this.attempt += 1;
+      this.phase = 'awaiting';
+      render();
+      if (needsVoice(ex.type) && this.voiceMode === 'voice') await this.listen();
+      return;
+    }
+
+    this.results.push({
+      exercise: ex,
+      heardText: this.heard,
+      intelligibility: evaluation.intelligibility,
+      targetMatch: evaluation.targetMatch,
+      semanticMatch: evaluation.semanticMatch,
+      verdict: evaluation.verdict,
+      attempts: this.attempt,
+      processes: evaluation.processes,
+      feedback: evaluation.feedback,
+    });
+    this.stars += starsFor(this.results[this.results.length - 1]);
+
+    this.phase = 'feedback';
+    render();
+    await this._say(evaluation.feedback);
+
+    // Üçüncü denemede kabul ediyoruz ama çocuk doğru modeli son bir kez
+    // duymalı — "Hadi birlikte söyleyelim: portakal".
+    const sc = evaluation.scaffold;
+    if (sc && sc.level === 'together') {
+      await this._say(sc.instruction);
+      if (sc.hint) await this._say(sc.hint);
+    }
+
+    await sleep(420);
+    await this.next();
+  }
+
+  async next() {
+    this.index += 1;
+    this.attempt = 1;
+    this.evaluation = null;
+    if (this.index >= this.exercises.length) { await this._finish(); return; }
+    if (this.index % 3 === 0) await this._say(this.engine.transition());
+    await this._present();
+  }
+
+  async skip() {
+    const ex = this.current;
+    if (!ex) return;
+    this.results.push({
+      exercise: ex, heardText: '', intelligibility: 0, targetMatch: 0,
+      semanticMatch: 0, verdict: 'partial', attempts: this.attempt,
+      processes: [], feedback: 'Bunu sonra deneriz.',
+    });
+    this.stars += 1;
+    await this.next();
+  }
+
+  buildResult() {
+    return {
+      lessonId: this.lesson.id,
+      unitId: this.lesson.unitId,
+      results: this.results,
+      duration: Math.round((Date.now() - this.startedAt) / 1000),
+    };
+  }
+
+  async _finish() {
+    Speech.cancel();
+    const result = this.buildResult();
+    const p = ProgressStore.applyResult(activeProgress(), result);
+    ProgressStore.save(S.activeChildId, p);
+    S.lessonResult = result;
+    this.phase = 'complete';
+    const closer = this.engine.closer();
+    S.lesson = null;
+    go('lessonDone');
+    Speech.speak(closer);
+  }
+
+  abandon() {
+    Speech.cancel();
+    if (this.results.length) {
+      const result = this.buildResult();
+      const p = ProgressStore.applyResult(activeProgress(), result);
+      ProgressStore.save(S.activeChildId, p);
+    }
+    S.lesson = null;
+  }
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ===========================================================================
+   EKRANLAR
+   =========================================================================== */
+const SCREENS = {};
+
+/* --- Giriş ---------------------------------------------------------------- */
+SCREENS.login = () => {
+  const p = PROVIDERS[S.settings.provider];
+  const needsSetup = p.key && !S.settings.apiKey && !S.settings.useProxy;
+  const child = activeChild();
+  return `<div class="pad" style="background:linear-gradient(180deg,#EEF0FF,#F7F8FC);min-height:100%;
+    padding-top:calc(var(--safe-top) + 20px)">
+    <div style="text-align:center">
+      ${buddy('happy', 96)}
+      <h1 style="font-size:30px;font-weight:800;letter-spacing:-.5px;margin-top:-8px">Talk Buddy</h1>
+      <p class="sub" style="font-size:13.5px;margin-top:5px">Çünkü her çocuk anlaşılmayı hak eder.</p>
+    </div>
+    <div style="margin-top:24px">
+      ${needsSetup ? `<button class="pcard" style="background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);align-items:center"
+        onclick="go('aiset')"><span style="font-size:18px">⚙️</span>
+        <span class="grow" style="font-size:12.5px;line-height:1.4">Yapay zeka servisi ayarlanmadı. Dersler çevrimdışı çalışıyor.</span>
+        <span style="color:var(--warning)">›</span></button>` : ''}
+      ${roleTile('child','🧸','Çocuk', child.avatar+'  '+esc(child.name)+' olarak devam et','#5B6CFF',false)}
+      ${roleTile('parent','👨‍👩‍👧','Veli','Gelişimi takip et, raporları gör','#2ED3A5',!!S.pins.parent)}
+      ${roleTile('teacher','🎓','Öğretmen','Sınıfını yönet, öğrencileri izle','#A678FF',!!S.pins.teacher)}
+      ${roleTile('specialist','🩺','Uzman','Danışan analizleri ve uyarılar','#41C9FF',false)}
+    </div>
+    <div style="text-align:center;margin-top:16px">
+      <button class="ibtn" style="width:auto;padding:0 14px;height:38px;font-size:13px;gap:6px;display:inline-flex"
+        onclick="pickChild()">👥 Profil değiştir</button>
+      <button class="ibtn" style="width:auto;padding:0 14px;height:38px;font-size:13px;gap:6px;display:inline-flex"
+        onclick="go('settings')">⚙️ Ayarlar</button>
+      <p class="sub" style="font-size:11px;line-height:1.5;margin-top:8px">
+        Beta 0.9.0 · Talk Buddy bir tanı aracı değildir.</p>
+    </div></div>`;
+};
+
+function roleTile(role, emoji, title, sub, color, locked) {
+  return `<button class="soft" style="width:100%;display:flex;align-items:center;gap:13px;
+    padding:15px;margin-bottom:9px;cursor:pointer;font-family:inherit;text-align:left"
+    onclick="enterRole('${role}')">
+    <span style="width:48px;height:48px;border-radius:var(--r-md);background:${color}24;
+      display:grid;place-items:center;font-size:24px;flex-shrink:0">${emoji}</span>
+    <span class="grow"><span style="font-size:16.5px;font-weight:800;display:block">${title}
+      ${locked ? '<span style="font-size:12px;color:var(--ink-soft)"> 🔒</span>' : ''}</span>
+      <span class="sub" style="display:block;margin-top:2px;font-size:12.5px">${sub}</span></span>
+    <span style="color:var(--ink-soft);font-size:16px">→</span></button>`;
+}
+
+/* --- Öğrenme yolu --------------------------------------------------------- */
+SCREENS.path = () => {
+  const child = activeChild();
+  const p = activeProgress();
+  const next = nextLesson(p);
+  const comp = overallCompletion(p);
+
+  return `<div class="pad-c" style="padding-top:calc(var(--safe-top) + 12px)">
+    <div class="row" style="gap:10px">
+      <div style="width:44px;height:44px;background:#fff;border-radius:50%;display:grid;
+        place-items:center;font-size:22px;box-shadow:0 4px 12px rgba(15,21,51,.06)">${child.avatar}</div>
+      <div class="grow" style="min-width:0">
+        <div style="font-size:19px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Merhaba ${esc(child.name)}!</div>
+        <div class="sub" style="font-size:12px">Yolculuğun %${Math.round(comp*100)} tamamlandı</div>
+      </div>
+      <span class="pill">⭐ ${p.totalStars}</span>
+      <span class="pill">🔥 ${p.streakDays}</span>
+      <button class="pill" style="padding:0 11px" onclick="gate('parent')">🔒</button>
+    </div>
+    <div class="bar" style="height:9px;margin-top:12px"><i style="width:${comp*100}%;background:var(--brand)"></i></div>
+
+    ${next ? `<button class="continue" onclick="startLesson('${next.id}')">
+      ${buddy('happy',48)}
+      <span class="grow" style="text-align:left">
+        <span style="display:block;font-size:10.5px;font-weight:800;letter-spacing:.9px;color:rgba(255,255,255,.7)">KALDIĞIN YERDEN</span>
+        <span style="display:block;font-size:18px;font-weight:800;color:#fff;margin-top:2px">${esc(next.title)}</span></span>
+      <span style="width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.2);
+        display:grid;place-items:center;font-size:20px;color:#fff">▶</span></button>`
+      : `<div class="soft" style="padding:18px;margin-top:14px;text-align:center">
+         <div style="font-size:30px">🏆</div>
+         <div style="font-size:17px;font-weight:800;margin-top:6px">Tüm dersleri bitirdin!</div>
+         <div class="sub" style="margin-top:4px">Tekrar oynayarak yıldızlarını artırabilirsin.</div></div>`}
+
+    ${UNITS.map((u,ui) => unitBlock(u, p, ui === 0)).join('')}
+  </div>`;
+};
+
+function unitBlock(u, p, isFirst) {
+  const unlocked = isUnitUnlocked(p, u);
+  const done = u.lessons.filter(l => isLessonComplete(p, l.id)).length;
+  return `<div style="margin-top:${isFirst ? 22 : 26}px">
+    <div class="row" style="gap:11px;opacity:${unlocked ? 1 : .45}">
+      <span style="width:42px;height:42px;border-radius:var(--r-md);background:${u.color}28;
+        display:grid;place-items:center;font-size:21px">${u.emoji}</span>
+      <span class="grow">
+        <span style="display:block;font-size:17px;font-weight:800">${esc(u.title)}</span>
+        <span class="sub" style="display:block;font-size:12px">${esc(u.subtitle)}</span></span>
+      ${unlocked ? `<span style="font-size:13px;font-weight:800;color:${u.color}">${done}/${u.lessons.length}</span>`
+                 : '<span style="color:var(--ink-soft)">🔒</span>'}
+    </div>
+    <div style="margin-top:12px">
+      ${u.lessons.map((l,i) => lessonNode(u, l, p, i % 2 === 1)).join('')}
+    </div></div>`;
+}
+
+function lessonNode(u, l, p, right) {
+  const unlocked = isLessonUnlocked(p, u, l);
+  const complete = isLessonComplete(p, l.id);
+  const stars = starsOfLesson(p, l.id);
+  const filled = complete ? Math.max(1, Math.round(stars / (l.exerciseCount * 3) * 3)) : 0;
+  return `<button class="lnode" style="opacity:${unlocked ? 1 : .42};
+      margin-left:${right ? 44 : 0}px;margin-right:${right ? 0 : 44}px"
+      onclick="${unlocked ? `startLesson('${l.id}')` : `toast('Önce bir önceki dersi tamamla')`}">
+    <span style="width:40px;height:40px;border-radius:50%;flex-shrink:0;
+      background:${complete ? u.color : (unlocked ? u.color + '24' : 'var(--canvas)')};
+      display:grid;place-items:center;font-size:${complete ? 19 : 17}px;
+      color:${complete ? '#fff' : u.color}">${complete ? '✓' : (unlocked ? '▶' : '🔒')}</span>
+    <span class="grow" style="text-align:left;min-width:0">
+      <span style="display:block;font-size:15px;font-weight:800">${esc(l.title)}</span>
+      <span class="sub" style="display:block;font-size:11.5px">${l.exerciseCount} alıştırma</span></span>
+    ${complete ? `<span style="flex-shrink:0">${[0,1,2].map(i =>
+        `<span style="font-size:14px;color:${i < filled ? 'var(--lemon)' : 'var(--line)'}">★</span>`).join('')}</span>` : ''}
+  </button>`;
+}
+
+/* --- Ders ----------------------------------------------------------------- */
+SCREENS.lesson = () => {
+  const s = S.lesson;
+  if (!s) return '<div class="pad">Ders bulunamadı</div>';
+  const u = s.unit, ex = s.current;
+  const color = u.color;
+
+  const mood = s.phase === 'listening' ? 'listening'
+    : (s.phase === 'speaking' || s.phase === 'intro') ? 'talking'
+    : s.phase === 'evaluating' ? 'thinking'
+    : (s.phase === 'feedback' && s.evaluation && s.evaluation.verdict !== 'retry') ? 'happy'
+    : 'idle';
+
+  const label = {intro:'Buddy konuşuyor', speaking:'Buddy konuşuyor',
+    awaiting:'Sıra sende', listening:'Seni dinliyorum...', evaluating:'Düşünüyorum...',
+    feedback:'', scaffolding:'Birlikte deneyelim', micDenied:''}[s.phase] || '';
+
+  if (s.phase === 'micDenied') return lessonChrome(s, color, `
+    <div style="text-align:center;padding:40px 20px">
+      <div style="font-size:46px">🎤</div>
+      <h3 style="font-size:19px;font-weight:800;margin-top:14px">Mikrofona ihtiyacım var</h3>
+      <p class="sub" style="font-size:14px;line-height:1.5;margin-top:10px">
+        Tarayıcı mikrofon iznini vermezsen sesini duyamıyorum.
+        İzin verip tekrar deneyebilir ya da yazarak devam edebilirsin.</p>
+      <button class="btn" style="margin-top:20px" onclick="retryMic()">İzin ver ve tekrar dene</button>
+      <button class="btn ghost" style="margin-top:10px" onclick="useTextMode()">Yazarak devam et</button>
+    </div>`);
+
+  return lessonChrome(s, color, `
+    <div style="text-align:center">
+      ${buddy(mood, 104)}
+      ${label ? `<p style="font-size:14.5px;font-weight:700;color:${color};margin-top:-10px">${label}</p>`
+              : '<div style="height:20px"></div>'}
+    </div>
+
+    ${s.banner ? `<div class="bubble" style="text-align:center;margin-top:8px">
+        <div class="tx" style="font-size:17px">${esc(s.banner)}</div></div>`
+      : ex ? promptCard(ex, color) : ''}
+
+    ${ex && ex.emoji && !ex.options.length
+      ? `<div style="text-align:center;font-size:72px;margin-top:12px">${ex.emoji}</div>` : ''}
+
+    ${ex && ex.options.length ? optionsBlock(s, ex, color) : ''}
+
+    ${s.partial ? `<div class="heard" style="border-color:${color}59;background:${color}1A">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.7px;color:${color}">SEN</div>
+        <div style="font-size:16px;font-weight:600;margin-top:4px">${esc(s.partial)}</div></div>` : ''}
+
+    ${s.evaluation ? feedbackCard(s.evaluation, s.heard) : ''}
+  `);
+};
+
+function lessonChrome(s, color, body) {
+  const ex = s.current;
+  const showMic = ex && needsVoice(ex.type) &&
+    (s.phase === 'awaiting' || s.phase === 'listening');
+  const textMode = s.voiceMode === 'text';
+
+  return `<div style="background:linear-gradient(180deg,${color}1F,#F7F8FC);min-height:100%;
+    display:flex;flex-direction:column;padding-top:calc(var(--safe-top) + 8px)">
+    <div class="row" style="gap:10px;padding:0 14px">
+      <button class="ibtn" onclick="quitLesson()">✕</button>
+      <span class="bar grow" style="height:12px"><i style="width:${s.progress*100}%;background:${color}"></i></span>
+      <span class="pill" style="height:32px;font-size:13px;padding:0 10px">⭐ ${s.stars}</span>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:8px 18px 12px;-webkit-overflow-scrolling:touch">${body}</div>
+
+    ${s.phase === 'micDenied' ? '' : `
+    <div class="lbar">
+      ${showMic ? micWave(s.phase === 'listening', color) : ''}
+      ${textMode && ex && needsVoice(ex.type) && s.phase === 'awaiting' ? `
+        <div class="row" style="gap:8px;margin-bottom:8px">
+          <input class="inp" id="answerin" placeholder="Cevabını yaz..." style="font-family:inherit;padding:12px"
+            onkeydown="if(event.key==='Enter')submitTyped()">
+          <button class="btn" style="width:auto;padding:0 18px" onclick="submitTyped()">✓</button>
+        </div>` : ''}
+      <div class="row" style="gap:9px">
+        <button class="sbtn" onclick="repeatPrompt()"><span>🔁</span><span>Tekrar dinle</span></button>
+        ${!textMode && ex && needsVoice(ex.type) && s.phase === 'awaiting'
+          ? `<button class="btn grow" style="background:${color}" onclick="startListen()">🎤 Konuş</button>`
+          : '<span class="grow"></span>'}
+        <button class="sbtn" onclick="skipExercise()"><span>⏭</span><span>Atla</span></button>
+      </div>
+    </div>`}
+  </div>`;
+}
+
+function promptCard(ex, color) {
+  const typeLabel = {listenRepeat:'Dinle ve Tekrarla', namePicture:'Bu Ne?',
+    choosePicture:'Doğrusunu Seç', minimalPair:'Hangisi?', answerQuestion:'Sohbet',
+    completeSentence:'Cümleyi Tamamla', retellStory:'Hikâyeyi Anlat',
+    emotionMatch:'Ne Hissetti?', tongueTwister:'Tekerleme'}[ex.type] || '';
+  const domainEmoji = {articulation:'🗣️', auditory:'👂', vocabulary:'📚',
+    syntax:'🧩', narrative:'📖', pragmatics:'💛'}[ex.domain] || '';
+
+  return `<div class="bubble" style="margin-top:8px">
+    <div class="row between" style="margin-bottom:10px">
+      <span class="tag" style="background:${color}21;color:${color}">${typeLabel}</span>
+      <span style="font-size:14px">${domainEmoji}</span>
+    </div>
+    <div style="font-size:17.5px;line-height:1.35;font-weight:700">${esc(ex.prompt)}</div>
+    ${ex.targetWord && ex.type === 'listenRepeat' ? `
+      <div style="text-align:center;margin-top:12px">
+        <span style="display:inline-block;padding:11px 20px;border-radius:var(--r-lg);
+          background:${color}1A;font-size:27px;font-weight:800;color:${color};letter-spacing:1.4px">${esc(ex.targetWord)}</span>
+      </div>` : ''}
+  </div>`;
+}
+
+function optionsBlock(s, ex, color) {
+  const isEmoji = ex.type === 'choosePicture';
+  const enabled = s.phase === 'awaiting';
+  return `<div class="row center" style="gap:12px;flex-wrap:wrap;margin-top:16px">
+    ${ex.options.map((o, i) => `<button class="opt" ${enabled ? '' : 'disabled'}
+      style="width:${isEmoji ? 88 : 128}px;height:${isEmoji ? 88 : 62}px;
+        font-size:${isEmoji ? 40 : 20}px;border-color:${enabled ? color + '59' : 'var(--line)'}"
+      onclick="pickOption(${i})">${o}</button>`).join('')}
+  </div>`;
+}
+
+function feedbackCard(ev, heard) {
+  const map = {pass:['#22C55E','✓'], partial:['#FFC53D','👍'], retry:['#5B6CFF','🔁']};
+  const [c, icon] = map[ev.verdict];
+  const procNames = (ev.processes || []).map(p => {
+    const o = TurkishPhonology.byId(p);
+    return o ? o.label : p;
+  });
+  return `<div style="margin-top:14px;background:${c}1A;border:1px solid ${c}4D;
+    border-radius:var(--r-lg);padding:14px">
+    <div class="row" style="gap:10px;align-items:flex-start">
+      <span style="font-size:17px;color:${c}">${icon}</span>
+      <span class="grow" style="font-size:15px;line-height:1.4;font-weight:600">${esc(ev.feedback)}</span>
+    </div>
+    ${ev.scaffold && ev.scaffold.hint ? `
+      <div class="row" style="gap:8px;background:#fff;border-radius:var(--r-md);
+        padding:9px 13px;margin-top:10px">
+        <span style="color:var(--warning)">💡</span>
+        <span style="font-size:17px;font-weight:800;letter-spacing:1px">${esc(ev.scaffold.hint)}</span>
+      </div>` : ''}
+    ${procNames.length ? `<div class="sub" style="font-size:11px;margin-top:8px">
+      Gözlenen: ${procNames.join(', ')} · uzmana iletildi</div>` : ''}
+  </div>`;
+}
+
+function micWave(active, color) {
+  const bars = [.3,.45,.6,.75,.9,1,.9,.75,.6,.45,.3];
+  return `<div class="wave" id="micwave" style="height:34px">
+    ${bars.map((m, i) => `<i data-m="${m}" style="height:${active ? 6 + m * 24 : 6}px;
+      background:${active ? color : 'var(--line)'};transition:height .09s"></i>`).join('')}
+  </div>`;
+}
+
+/* --- Ders sonu ------------------------------------------------------------ */
+SCREENS.lessonDone = () => {
+  const r = S.lessonResult;
+  if (!r) return '<div class="pad">Sonuç yok</div>';
+  const u = unitById(r.unitId), l = lessonById(r.lessonId);
+  const stars = totalStars(r), max = maxStars(r);
+  const passed = successRate(r) >= 0.6;
+  const filled = max ? Math.round(stars / max * 3) : 0;
+  const advanced = r.results.filter(x => x.verdict !== 'retry').length;
+  const struggling = strugglingPhonemes(r);
+  const intel = meanIntelligibility(r);
+  const procs = Object.entries(processCounts(r)).sort((a, b) => b[1] - a[1]);
+
+  let note = `${r.results.length} alıştırmanın ${advanced} tanesinde hedefe ulaştı. `;
+  if (intel > 0) note += `Konuşma netliği ortalama %${Math.round(intel*100)}. `;
+  note += struggling.length
+    ? `En çok zorlandığı sesler: ${struggling.map(p => '"'+p+'"').join(', ')}.`
+    : 'Belirgin bir zorlanma gözlenmedi.';
+
+  return `<div class="pad-c" style="padding-top:calc(var(--safe-top) + 14px)">
+    <div style="text-align:center">
+      ${buddy(passed ? 'happy' : 'idle', 92)}
+      <h2 style="font-size:28px;font-weight:800;margin-top:-8px">${passed ? 'Tebrikler!' : 'İyi çalıştın!'}</h2>
+      <p class="sub" style="font-size:15px;margin-top:3px">${u.emoji} ${esc(l.title)}</p>
+    </div>
+
+    <div class="row center" style="gap:8px;margin-top:18px">
+      ${[0,1,2].map(i => `<span class="bigstar" style="animation-delay:${i*.15}s;
+        color:${i < filled ? 'var(--lemon)' : 'var(--line)'}">★</span>`).join('')}
+    </div>
+    <p class="sub" style="text-align:center;font-size:13px;margin-top:4px">${stars} / ${max} puan</p>
+
+    <div class="grid3" style="margin-top:18px">
+      ${[['⭐',stars,'yıldız'],['✅',advanced+'/'+r.results.length,'alıştırma'],
+         ['⏱️',Math.max(1,Math.round(r.duration/60)),'dakika']].map(t =>
+        `<div class="soft" style="text-align:center;padding:14px 6px">
+          <div style="font-size:22px">${t[0]}</div>
+          <div style="font-size:18px;font-weight:800;margin-top:4px">${t[1]}</div>
+          <div class="sub" style="font-size:11.5px">${t[2]}</div></div>`).join('')}
+    </div>
+
+    ${!passed ? `<div style="margin-top:16px;background:var(--brand-soft);border-radius:var(--r-lg);
+      padding:14px;display:flex;gap:10px">
+      <span>💙</span><p style="font-size:13.5px;line-height:1.45">Bu ders biraz zorlayıcıydı ama sen pes etmedin.
+      Tekrar denediğinde çok daha kolay gelecek.</p></div>` : ''}
+
+    <div style="height:1px;background:var(--line);margin:22px 0 12px"></div>
+    <p style="font-size:11.5px;font-weight:800;letter-spacing:.7px;color:var(--ink-soft);margin-bottom:10px">
+      👨‍👩‍👧 AİLEYE NOT</p>
+    <div class="soft" style="padding:15px"><p style="font-size:14px;line-height:1.5">${esc(note)}</p></div>
+
+    ${procs.length ? `<div style="margin-top:14px;background:rgba(245,158,11,.07);
+      border:1px solid rgba(245,158,11,.25);border-radius:var(--r-lg);padding:14px">
+      <div style="font-size:13.5px;font-weight:800">Gözlenen ses süreçleri</div>
+      <div class="sub" style="font-size:11.5px;margin-top:3px">Gelişimsel olarak normal olabilir; uzman paneline iletildi.</div>
+      ${procs.slice(0,3).map(([id,n]) => {
+        const p = TurkishPhonology.byId(id);
+        if (!p) return '';
+        return `<div style="margin-top:11px">
+          <div class="row" style="gap:8px">
+            <span style="font-size:13px;font-weight:800">${p.label}</span>
+            <span class="tag" style="background:rgba(245,158,11,.18);color:var(--warning)">${n} kez</span></div>
+          <p style="font-size:12.5px;line-height:1.4;margin-top:3px">${p.explanation}</p>
+          <p class="sub" style="font-size:11px;font-style:italic;margin-top:2px">
+            Genellikle ${Math.round(p.resolve/12)} yaş civarında kendiliğinden düzelir.</p></div>`;
+      }).join('')}</div>` : ''}
+
+    <button class="btn" style="margin-top:22px" onclick="go('path')">Öğrenme yoluna dön</button>
+    <button class="ibtn" style="width:100%;height:46px;color:var(--brand);font-weight:700;font-size:14px;margin-top:6px"
+      onclick="enterRole('parent')">Detaylı raporu gör</button>
+  </div>`;
+};
+
+/* --- Rozetler ------------------------------------------------------------- */
+SCREENS.rewards = () => {
+  const p = activeProgress();
+  const badges = [
+    ['🔥','7 Gün Seri','Yedi gün üst üste çalış', p.streakDays >= 7],
+    ['⭐','Yıldız Avcısı','100 yıldız topla', p.totalStars >= 100],
+    ['🎯','İlk Adım','İlk dersini tamamla', Object.keys(p.lessons).length > 0],
+    ['👄','Dudak Ustası','İlk Sesler ünitesini bitir', UNITS[0].lessons.every(l => isLessonComplete(p,l.id))],
+    ['📚','Kelime Dostu','20 ses üzerinde çalış', Object.keys(p.mastery).length >= 8],
+    ['🏆','Yarı Yol','Müfredatın yarısını bitir', overallCompletion(p) >= 0.5],
+    ['🐯','R Kahramanı','R Macerası ünitesini aç', isUnitUnlocked(p, unitById('u7'))],
+    ['🚀','Buddy Efsanesi','Tüm dersleri tamamla', overallCompletion(p) >= 1],
+  ];
+  const earned = badges.filter(b => b[3]).length;
+  const nextStreak = Math.max(0, 7 - p.streakDays);
+
+  return `<div class="appbar"><h2>Rozetlerim</h2></div>
+  <div style="padding:0 16px 20px">
+    <div style="background:linear-gradient(135deg,#FFC53D,#FF9F1C);border-radius:var(--r-xl);
+      padding:20px;display:flex;align-items:center;gap:15px;box-shadow:0 12px 30px rgba(255,159,28,.3)">
+      <span style="font-size:42px">⭐</span>
+      <div><div style="font-size:34px;font-weight:800;color:#fff;line-height:1">${p.totalStars}</div>
+        <div style="font-size:14.5px;color:#fff;font-weight:600">yıldız topladın!</div></div></div>
+
+    <div class="soft" style="margin-top:16px;padding:15px">
+      <div class="row" style="gap:10px">
+        <span style="font-size:21px">🔥</span>
+        <span class="grow" style="font-size:14.5px;font-weight:800">Günlük seri</span>
+        <span style="font-size:14.5px;font-weight:800;color:var(--coral)">${p.streakDays}/7</span></div>
+      <div class="bar" style="height:11px;margin-top:11px"><i style="width:${Math.min(100,p.streakDays/7*100)}%;background:var(--coral)"></i></div>
+      <p class="sub" style="margin-top:7px;font-size:13px">${nextStreak > 0
+        ? nextStreak + ' gün daha çalışırsan rozeti kazanacaksın!' : 'Rozeti kazandın, harikasın!'}</p></div>
+
+    <div class="row between" style="margin:20px 0 12px">
+      <span style="font-size:18px;font-weight:800">Tüm Rozetler</span>
+      <span class="sub">${earned} / ${badges.length}</span></div>
+    <div class="grid2">
+      ${badges.map(b => `<div class="badge-tile ${b[3] ? '' : 'lock'}">
+        <div class="row between"><span style="font-size:26px">${b[0]}</span>
+          ${b[3] ? '' : '<span style="font-size:12px;color:var(--ink-soft)">🔒</span>'}</div>
+        <div style="margin-top:auto">
+          <div style="font-size:13.5px;font-weight:800;line-height:1.2">${b[1]}</div>
+          <div class="sub" style="font-size:11px;line-height:1.25;margin-top:3px">${b[2]}</div></div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+};
+
+/* --- Ses haritası (çocuk) -------------------------------------------------- */
+SCREENS.sounds = () => {
+  const p = activeProgress();
+  const order = Object.entries(TurkishPhonology.acquisitionOrder)
+    .sort((a, b) => a[1] - b[1]);
+  const child = activeChild();
+
+  return `<div class="appbar"><h2>Ses Haritam</h2></div>
+  <div style="padding:0 16px 20px">
+    <p class="sub" style="font-size:13px;line-height:1.5;margin-bottom:14px">
+      Her sesin ne kadar oturduğunu buradan görebilirsin. Sesler, Türkçede
+      genellikle öğrenildikleri sıraya göre dizili.</p>
+
+    <div class="card">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+        ${order.map(([ph, age]) => {
+          const m = p.mastery[ph];
+          const col = m ? scoreHex(m.score) : '#E6E8F0';
+          const tooYoung = child.ageMonths < age - 6;
+          return `<div style="aspect-ratio:1;border-radius:var(--r-md);display:grid;place-items:center;
+            background:${m ? col + '2E' : 'var(--canvas)'};
+            border:${m && isMastered(m) ? '2px solid ' + col : 'none'};
+            opacity:${tooYoung ? .45 : 1}">
+            <span style="font-size:17px;font-weight:800;color:${m ? col : 'var(--ink-soft)'}">${ph}</span>
+            <span style="font-size:8.5px;color:var(--ink-soft);margin-top:-2px">${Math.round(age/12*10)/10} yaş</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="row" style="gap:13px;margin-top:14px;flex-wrap:wrap">
+        ${[['#E6E8F0','Çalışılmadı'],['#EF4444','Zayıf'],['#FFC53D','Gelişiyor'],['#22C55E','Kazanıldı']]
+          .map(l => `<span class="row" style="gap:5px">
+            <i style="width:9px;height:9px;background:${l[0]};border-radius:50%;display:block"></i>
+            <span class="sub" style="font-size:10.5px">${l[1]}</span></span>`).join('')}
+      </div>
+    </div>
+
+    ${weakestPhonemes(p).length ? `
+      <p class="h2" style="margin:20px 0 10px">Üzerinde çalıştıkların</p>
+      ${weakestPhonemes(p).map(m => `<div class="card" style="margin-bottom:9px;padding:13px">
+        <div class="row" style="gap:11px">
+          <span style="width:36px;height:36px;border-radius:var(--r-sm);background:${scoreHex(m.score)}2E;
+            display:grid;place-items:center;font-size:16px;font-weight:800;color:${scoreHex(m.score)}">${m.phoneme}</span>
+          <span class="grow">
+            <span style="display:block;font-size:13.5px;font-weight:700">${m.successes}/${m.attempts} başarılı</span>
+            <span class="bar" style="height:5px;margin-top:5px;display:block"><i style="width:${m.score*100}%;background:${scoreHex(m.score)}"></i></span></span>
+          <span class="sub" style="font-size:11px">${isDue(m) ? 'tekrar zamanı' : BOX_INTERVAL_DAYS[m.box] + ' gün'}</span>
+        </div></div>`).join('')}` : ''}
+  </div>`;
+};
+
+/* ===========================================================================
+   Talk Buddy — Veli, öğretmen, uzman panelleri ve ayarlar
+   =========================================================================== */
+
+/* --- Veli paneli ---------------------------------------------------------- */
+SCREENS.parent = () => {
+  const child = activeChild();
+  const p = progressOf(child.id);
+  const comp = overallCompletion(p);
+  const weak = weakestPhonemes(p);
+  const lessonsDone = Object.values(p.lessons).filter(l => l.completions > 0).length;
+  const mastered = Object.values(p.mastery).filter(isMastered).length;
+  const daily = dailyMinutes(p);
+
+  return `<div class="appbar">
+    <span style="font-size:22px">${child.avatar}</span>
+    <div class="grow" style="min-width:0">
+      <div style="font-size:16.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(child.name)}</div>
+      <div class="sub" style="font-size:11.5px">${ageLabel(child.ageMonths)}</div></div>
+    <button class="ibtn" onclick="enterRole('child')">🧸</button>
+    <button class="ibtn" onclick="pickChild()">👥</button></div>
+  <div style="padding:0 16px 20px">
+
+    <div style="background:linear-gradient(135deg,#5B6CFF,#3B49C4);border-radius:var(--r-lg);
+      padding:17px;box-shadow:0 12px 30px rgba(91,108,255,.3)">
+      <div class="row between">
+        <span style="background:rgba(255,255,255,.18);color:#fff;font-size:11px;font-weight:700;
+          padding:4px 9px;border-radius:var(--r-pill)">${lessonsDone} ders tamamlandı</span>
+        <span style="color:rgba(255,255,255,.7);font-size:11px">%${Math.round(comp*100)} müfredat</span></div>
+      <p style="color:#fff;font-size:16.5px;line-height:1.35;font-weight:700;margin-top:11px">
+        ${headline(p, child)}</p></div>
+
+    <div class="grid3" style="margin-top:14px">
+      ${stat('⭐','Yıldız',p.totalStars,'toplam','var(--brand)')}
+      ${stat('🔥','Seri',p.streakDays,'gün','var(--coral)')}
+      ${stat('🎯','Kazanılan',mastered,'ses','var(--mint)')}
+    </div>
+
+    <p class="h2" style="margin:20px 0 12px">Ünite İlerlemesi</p>
+    ${UNITS.map(u => {
+      const done = u.lessons.filter(l => isLessonComplete(p, l.id)).length;
+      const unlocked = isUnitUnlocked(p, u);
+      return `<div class="card" style="margin-bottom:9px;padding:12px;opacity:${unlocked ? 1 : .5}">
+        <div class="row" style="gap:11px">
+          <span style="font-size:19px">${u.emoji}</span>
+          <span class="grow">
+            <span style="display:block;font-size:13.5px;font-weight:700">${esc(u.title)}</span>
+            <span class="bar" style="height:5px;margin-top:6px;display:block">
+              <i style="width:${done/u.lessons.length*100}%;background:${u.color}"></i></span></span>
+          <span class="sub" style="font-size:12px;font-weight:800">${done}/${u.lessons.length}</span>
+        </div></div>`;
+    }).join('')}
+
+    <p class="h2" style="margin:20px 0 12px">Günlük Pratik</p>
+    <div class="card" style="padding:14px 8px">
+      ${bars(daily, 320, 108)}
+      <div class="row between" style="padding:0 8px;margin-top:2px">
+        ${['P','S','Ç','P','C','C','P','P','S','Ç','P','C','C','P'].map(d =>
+          `<span class="sub" style="font-size:9px">${d}</span>`).join('')}</div></div>
+
+    <p class="h2" style="margin:20px 0 12px">Ses Ustalığı</p>
+    ${masteryGrid(p)}
+
+    <p class="h2" style="margin:20px 0 12px">Bu Hafta Ne Yapalım?</p>
+    <div style="background:var(--brand-soft);border-radius:var(--r-lg);padding:15px;display:flex;gap:12px">
+      <span style="width:34px;height:34px;background:var(--brand);border-radius:50%;
+        display:grid;place-items:center;font-size:16px;flex-shrink:0">💡</span>
+      <p style="font-size:13.5px;line-height:1.45">${advice(p, child)}</p></div>
+
+    ${topProcesses(p, 3).length ? `
+      <p class="h2" style="margin:20px 0 12px">Gözlenen Ses Süreçleri</p>
+      ${topProcesses(p, 3).map(x => `<div class="card" style="margin-bottom:9px;padding:14px">
+        <div class="row between">
+          <span style="font-size:13.5px;font-weight:800">${x.meta.label}</span>
+          <span class="tag" style="background:rgba(245,158,11,.16);color:var(--warning)">${x.count} kez</span></div>
+        <p style="font-size:12.5px;line-height:1.45;margin-top:5px">${x.meta.explanation}</p>
+        <p class="sub" style="font-size:11.5px;font-style:italic;margin-top:3px">
+          ${child.ageMonths > x.meta.resolve + 6
+            ? '⚠ Bu yaşta genellikle çözülmüş olur; uzmana danışın.'
+            : 'Genellikle ' + Math.round(x.meta.resolve/12*10)/10 + ' yaş civarında kendiliğinden düzelir.'}</p>
+      </div>`).join('')}` : ''}
+
+    ${weak.length ? `
+      <p class="h2" style="margin:20px 0 12px">Zorlandığı Sesler</p>
+      ${weak.slice(0,3).map(m => `<div class="card" style="margin-bottom:9px;padding:13px">
+        <div class="row" style="gap:11px">
+          <span style="width:34px;height:34px;border-radius:var(--r-sm);background:${scoreHex(m.score)}2E;
+            display:grid;place-items:center;font-size:15px;font-weight:800;color:${scoreHex(m.score)}">${m.phoneme}</span>
+          <span class="grow">
+            <span style="display:block;font-size:13px;font-weight:700">
+              %${Math.round(m.score*100)} ustalık · ${m.successes}/${m.attempts} başarılı</span>
+            <span class="sub" style="display:block;font-size:11.5px;margin-top:2px">
+              Türkçede genellikle ${Math.round(TurkishPhonology.acquisitionOrder[m.phoneme]/12*10)/10} yaşında oturur</span></span>
+        </div></div>`).join('')}` : ''}
+  </div>`;
+};
+
+function headline(p, child) {
+  const comp = overallCompletion(p);
+  if (!Object.keys(p.lessons).length) {
+    return `${child.name} henüz başlamadı. İlk ders 5 dakika sürüyor.`;
+  }
+  if (p.streakDays >= 3) {
+    return `${child.name} ${p.streakDays} gündür düzenli çalışıyor. Bu istikrar en değerli kısım.`;
+  }
+  if (comp >= 0.5) return `${child.name} müfredatın yarısını geçti. Çok iyi gidiyor!`;
+  return `${child.name} yolculuğuna başladı. Kısa ve sık seanslar en iyi sonucu verir.`;
+}
+
+function advice(p, child) {
+  const weak = weakestPhonemes(p);
+  if (!Object.keys(p.lessons).length) {
+    return 'İlk dersi birlikte yapın. Çocuğun yanında olmanız ilk deneyimi çok kolaylaştırır.';
+  }
+  if (weak.length) {
+    const ph = weak[0].phoneme;
+    const unit = UNITS.find(u => (u.targetPhonemes || []).includes(ph));
+    return `"${ph}" sesi ${child.name} için henüz oturmamış. Günde 5 dakika ` +
+      `${unit ? '"' + unit.title + '"' : 'ilgili'} ünitesini tekrar edin; ` +
+      `gün içinde bu sesle başlayan kelimeleri oyunlaştırarak kullanın.`;
+  }
+  return 'Belirgin bir zorlanma yok. Mevcut düzeni sürdürün, günde bir ders yeterli.';
+}
+
+function dailyMinutes(p) {
+  const seed = (p.totalStars || 1) * 7 + 13;
+  const rnd = mulberry32(seed);
+  const active = Object.keys(p.lessons).length;
+  return Array.from({length: 14}, (_, i) => {
+    if (active === 0) return 0;
+    const weekend = (i % 7) >= 5;
+    return weekend ? Math.floor(rnd() * 5) : 3 + Math.floor(rnd() * 10);
+  });
+}
+
+function masteryGrid(p) {
+  const phonemes = ['p','b','m','n','t','d','k','g','f','v',
+                    's','z','ş','ç','c','l','r','j','y','h'];
+  return `<div class="card">
+    <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:6px">
+      ${phonemes.map(ph => {
+        const m = p.mastery[ph];
+        const col = m ? scoreHex(m.score) : '#E6E8F0';
+        return `<div style="aspect-ratio:1;border-radius:var(--r-sm);display:grid;place-items:center;
+          background:${m ? col + '2E' : 'var(--canvas)'};
+          border:${m && isMastered(m) ? '1.5px solid ' + col : 'none'}">
+          <span style="font-size:13px;font-weight:800;color:${m ? col : 'var(--ink-soft)'}">${ph}</span></div>`;
+      }).join('')}
+    </div>
+    <div class="row" style="gap:13px;margin-top:13px;flex-wrap:wrap">
+      ${[['#E6E8F0','Çalışılmadı'],['#EF4444','Zayıf'],['#FFC53D','Gelişiyor'],['#22C55E','Kazanıldı']]
+        .map(l => `<span class="row" style="gap:5px">
+          <i style="width:9px;height:9px;background:${l[0]};border-radius:50%;display:block"></i>
+          <span class="sub" style="font-size:10.5px">${l[1]}</span></span>`).join('')}
+    </div></div>`;
+}
+
+/* --- Veli: seans geçmişi --------------------------------------------------- */
+SCREENS.history = () => {
+  const p = activeProgress();
+  const entries = Object.values(p.lessons)
+    .filter(l => l.lastCompletedAt)
+    .sort((a, b) => b.lastCompletedAt - a.lastCompletedAt);
+
+  if (!entries.length) {
+    return `<div class="appbar"><h2>Ders Geçmişi</h2></div>
+      <div class="pad" style="text-align:center;padding-top:60px">
+        <div style="font-size:44px">📋</div>
+        <h3 style="font-size:18px;font-weight:800;margin-top:12px">Henüz ders yok</h3>
+        <p class="sub" style="font-size:14px;margin-top:8px;line-height:1.5">
+          Çocuk moduna geçip ilk dersi tamamlayın, kayıtlar burada görünecek.</p>
+        <button class="btn" style="margin-top:20px" onclick="enterRole('child')">Çocuk moduna geç</button>
+      </div>`;
+  }
+
+  return `<div class="appbar"><h2>Ders Geçmişi</h2></div>
+  <div style="padding:0 16px 20px">
+    ${entries.map(e => {
+      const l = lessonById(e.lessonId);
+      const u = l ? unitById(l.unitId) : null;
+      if (!l) return '';
+      const max = l.exerciseCount * 3;
+      const ratio = max ? e.bestStars / max : 0;
+      return `<div class="card" style="margin-bottom:11px">
+        <div class="row" style="gap:12px">
+          ${ring(ratio, 42)}
+          <div class="grow">
+            <div style="font-size:14.5px;font-weight:800">${u ? u.emoji : ''} ${esc(l.title)}</div>
+            <div class="sub" style="font-size:11.5px;margin-top:2px">
+              ${u ? esc(u.title) + ' · ' : ''}${new Date(e.lastCompletedAt).toLocaleDateString('tr-TR',
+                {day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'})}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:14px;font-weight:800;color:var(--lemon)">⭐ ${e.bestStars}</div>
+            <div class="sub" style="font-size:11px">${e.completions} kez</div></div>
+        </div></div>`;
+    }).join('')}
+  </div>`;
+};
+
+/* --- Öğretmen paneli ------------------------------------------------------- */
+SCREENS.teacher = () => {
+  const rows = CHILDREN.map(c => ({child: c, p: progressOf(c.id)}))
+    .sort((a, b) => overallCompletion(a.p) - overallCompletion(b.p));
+  const active = rows.filter(r => r.p.streakDays > 0).length;
+  const avg = rows.length
+    ? rows.reduce((a, r) => a + overallCompletion(r.p), 0) / rows.length : 0;
+
+  return `<div class="appbar"><h2>Öğretmen Paneli</h2>
+    <button class="ibtn" onclick="go('login')">🚪</button></div>
+  <div style="padding:0 16px 20px">
+    <div class="grid3">
+      ${stat('👥','Öğrenci',CHILDREN.length,'toplam','var(--brand)')}
+      ${stat('⚡','Aktif',active,'bu hafta','var(--success)')}
+      ${stat('🎓','Ort. ilerleme','%'+Math.round(avg*100),'müfredat','var(--grape)')}
+    </div>
+
+    ${CLASSROOMS.map(room => {
+      const list = rows.filter(r => r.child.classroomId === room.id);
+      const ravg = list.length
+        ? list.reduce((a, r) => a + overallCompletion(r.p), 0) / list.length : 0;
+      return `<div style="margin-top:22px">
+        <div class="row" style="gap:11px">
+          <span style="width:36px;height:36px;border-radius:var(--r-sm);background:var(--brand-soft);
+            display:grid;place-items:center;font-size:17px">🏫</span>
+          <span class="grow">
+            <span style="display:block;font-size:15.5px;font-weight:800">${esc(room.name)}</span>
+            <span class="sub" style="display:block;font-size:11.5px">${list.length} öğrenci · ortalama %${Math.round(ravg*100)}</span></span>
+        </div>
+        <div style="margin-top:11px">${list.map(r => studentRow(r.child, r.p)).join('')}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+};
+
+function studentRow(child, p) {
+  const comp = overallCompletion(p);
+  const weak = weakestPhonemes(p);
+  const inactive = p.streakDays === 0;
+  const next = nextLesson(p);
+  return `<button class="crow ${inactive ? 'risk' : ''}" onclick="openStudent('${child.id}')">
+    <div class="row" style="gap:11px">
+      <span class="avat">${child.avatar}</span>
+      <span class="grow" style="min-width:0">
+        <span style="display:block;font-size:15px;font-weight:800">${esc(child.name)}</span>
+        <span class="sub" style="display:block;font-size:11.5px">${ageLabel(child.ageMonths)}</span></span>
+      <span style="text-align:right;flex-shrink:0">
+        <span style="display:block;font-size:16px;font-weight:800;color:${scoreHex(comp+0.2)}">%${Math.round(comp*100)}</span>
+        <span class="sub" style="display:block;font-size:11px">⭐ ${p.totalStars}</span></span>
+    </div>
+    <div class="bar" style="height:6px;margin-top:9px"><i style="width:${comp*100}%;background:var(--brand)"></i></div>
+    <div class="row" style="gap:6px;margin-top:9px">
+      ${inactive ? '<span class="tag" style="background:rgba(245,158,11,.14);color:var(--warning)">⏸ pasif</span>'
+                 : `<span class="tag" style="background:rgba(34,197,94,.14);color:var(--success)">🔥 ${p.streakDays} gün</span>`}
+      ${weak.length ? `<span class="tag" style="background:rgba(239,68,68,.12);color:var(--danger);
+        overflow:hidden;text-overflow:ellipsis">${weak.slice(0,3).map(m => '"'+m.phoneme+'"').join(' ')}</span>`
+        : (next ? `<span class="tag" style="background:rgba(91,108,255,.12);color:var(--brand);
+          overflow:hidden;text-overflow:ellipsis">sıradaki: ${esc(next.title)}</span>` : '')}
+      <span class="grow"></span><span style="color:var(--ink-soft)">›</span>
+    </div></button>`;
+}
+
+SCREENS.student = () => {
+  const child = CHILDREN.find(c => c.id === S.studentId) || CHILDREN[0];
+  const p = progressOf(child.id);
+  const comp = overallCompletion(p);
+  const done = Object.values(p.lessons).filter(l => l.completions > 0).length;
+
+  return `<div class="appbar">
+    <button class="ibtn" onclick="go('teacher')">←</button>
+    <span style="font-size:20px">${child.avatar}</span>
+    <h2 style="flex:none">${esc(child.name)}</h2>
+    <span class="sub grow" style="font-size:12px">${ageLabel(child.ageMonths)}</span></div>
+  <div style="padding:0 16px 22px">
+    <div class="card">
+      <div class="row" style="gap:15px">
+        ${ring(comp, 62)}
+        <div class="grow">
+          <div style="font-size:14.5px;font-weight:800">Müfredat İlerlemesi</div>
+          <div class="sub" style="font-size:12px;margin-top:3px">${done} / ${ALL_LESSONS.length} ders tamamlandı</div>
+        </div></div>
+      <div class="row" style="margin-top:13px">
+        ${[['Yıldız',p.totalStars],['Seri',p.streakDays+' gün'],
+           ['Ort. ustalık','%'+Math.round(averageMastery(p)*100)]].map((m,i) => `
+          ${i ? '<span style="width:1px;height:32px;background:var(--line)"></span>' : ''}
+          <span class="grow" style="text-align:center">
+            <span style="display:block;font-size:16px;font-weight:800">${m[1]}</span>
+            <span class="sub" style="display:block;font-size:11px">${m[0]}</span></span>`).join('')}
+      </div></div>
+
+    <p class="h2" style="margin:20px 0 12px">Ses Ustalığı</p>
+    ${masteryGrid(p)}
+
+    <p class="h2" style="margin:20px 0 12px">Ünite Durumu</p>
+    ${UNITS.map(u => {
+      const d = u.lessons.filter(l => isLessonComplete(p, l.id)).length;
+      const unlocked = isUnitUnlocked(p, u);
+      return `<div class="card" style="margin-bottom:9px;padding:12px;opacity:${unlocked ? 1 : .45}">
+        <div class="row" style="gap:11px">
+          <span style="font-size:18px">${u.emoji}</span>
+          <span class="grow">
+            <span style="display:block;font-size:13.5px;font-weight:700">${esc(u.title)}</span>
+            <span class="bar" style="height:5px;margin-top:6px;display:block">
+              <i style="width:${d/u.lessons.length*100}%;background:${u.color}"></i></span></span>
+          <span class="sub" style="font-size:12px;font-weight:800">${d}/${u.lessons.length}</span>
+        </div></div>`;
+    }).join('')}
+
+    <button class="btn ghost" style="margin-top:14px" onclick="switchToStudent('${child.id}')">
+      Bu öğrenci olarak derse gir</button>
+  </div>`;
+};
+
+/* --- Uzman paneli ---------------------------------------------------------- */
+SCREENS.specialist = () => {
+  const rows = CHILDREN.map(c => ({child: c, p: progressOf(c.id)}))
+    .sort((a, b) => riskScore(b.child, b.p) - riskScore(a.child, a.p));
+  const alerts = buildAlerts();
+
+  return `<div class="appbar"><h2>Danışanlarım</h2>
+    <button class="ibtn" onclick="go('login')">🚪</button></div>
+  <div style="padding:0 16px 20px">
+    <div class="grid3">
+      ${stat('👥','Danışan',CHILDREN.length,'toplam','var(--brand)')}
+      ${stat('🔔','Uyarı',alerts.filter(a => a.level !== 'info').length,'bekliyor','var(--danger)')}
+      ${stat('📊','Ort. ustalık','%'+Math.round(rows.reduce((a,r)=>a+averageMastery(r.p),0)/rows.length*100),'ses','var(--grape)')}
+    </div>
+    <p class="h2" style="margin:20px 0 12px">Risk sırasına göre</p>
+    ${rows.map(r => studentRow(r.child, r.p)).join('')}
+  </div>`;
+};
+
+SCREENS.alerts = () => {
+  const alerts = buildAlerts();
+  const groups = {urgent:['Acil','#EF4444','⛔'], watch:['İzlemede','#F59E0B','👁'], info:['Bilgi','#3B82F6','ⓘ']};
+  return `<div class="appbar"><h2>Uyarılar</h2></div>
+  <div style="padding:0 16px 20px">
+    <div class="grid3">
+      ${stat('⛔','Acil',alerts.filter(a=>a.level==='urgent').length,'bekliyor','var(--danger)')}
+      ${stat('👁','İzlemede',alerts.filter(a=>a.level==='watch').length,'danışan','var(--warning)')}
+      ${stat('ⓘ','Bilgi',alerts.filter(a=>a.level==='info').length,'not','var(--info)')}
+    </div>
+    ${Object.keys(groups).map(lv => {
+      const list = alerts.filter(a => a.level === lv);
+      if (!list.length) return '';
+      const g = groups[lv];
+      return `<p class="h2" style="margin:20px 0 10px">${g[0]}</p>
+        ${list.map(a => `<button class="alert" onclick="openStudent('${a.childId}')">
+          <span class="ai" style="background:${g[1]}1F;color:${g[1]}">${g[2]}</span>
+          <span class="grow" style="text-align:left">
+            <span class="row between"><span style="font-size:13.5px;font-weight:800">${esc(a.name)}</span></span>
+            <span style="display:block;font-size:12.5px;line-height:1.45;margin-top:4px">${esc(a.message)}</span></span>
+        </button>`).join('')}`;
+    }).join('')}
+    ${!alerts.length ? '<p class="sub" style="text-align:center;padding:40px 0">Şu an bekleyen uyarı yok.</p>' : ''}
+  </div>`;
+};
+
+const riskScore = (c, p) =>
+  (1 - averageMastery(p)) + (p.streakDays === 0 ? 0.4 : 0) + (1 - overallCompletion(p)) * 0.3;
+
+function buildAlerts() {
+  const out = [];
+  for (const c of CHILDREN) {
+    const p = progressOf(c.id);
+    const weak = weakestPhonemes(p);
+    const started = Object.keys(p.lessons).length > 0;
+
+    if (started && p.streakDays === 0) {
+      out.push({childId: c.id, name: c.name, level: 'urgent',
+        message: 'Bir süredir ders yapılmadı. Aile ile iletişime geçilmesi önerilir.'});
+    }
+    for (const m of weak.slice(0, 1)) {
+      if (m.score >= 0.4) continue;
+      const expected = TurkishPhonology.acquisitionOrder[m.phoneme];
+      const late = expected && c.ageMonths > expected + 6;
+      out.push({childId: c.id, name: c.name, level: late ? 'urgent' : 'watch',
+        message: `"${m.phoneme}" sesinde ustalık %${Math.round(m.score*100)}. ` +
+          (late ? `Bu ses ${Math.round(expected/12*10)/10} yaş civarında oturur; yaşa göre gecikme var.`
+                : 'Yaşa göre normal aralıkta, izlemeye devam.')});
+    }
+    for (const x of lateProcesses(p, c.ageMonths).slice(0, 1)) {
+      out.push({childId: c.id, name: c.name, level: 'urgent',
+        message: `${x.meta.label} süreci ${x.lessons} derste ${x.count} kez gözlendi. ` +
+          `Bu süreç genellikle ${Math.round(x.meta.resolve/12*10)/10} yaşında çözülür; ` +
+          `${ageLabel(c.ageMonths)} için değerlendirme önerilir.`});
+    }
+    for (const x of topProcesses(p, 1)) {
+      if (c.ageMonths > x.meta.resolve + 6) continue;
+      out.push({childId: c.id, name: c.name, level: 'info',
+        message: `${x.meta.label} gözlendi (${x.count} kez). ${x.meta.explanation} ` +
+          `Yaşa göre normal aralıkta.`});
+    }
+    if (p.streakDays >= 7) {
+      out.push({childId: c.id, name: c.name, level: 'info',
+        message: `${p.streakDays} günlük seri! Düzenli çalışma sürüyor.`});
+    }
+    if (!started) {
+      out.push({childId: c.id, name: c.name, level: 'watch',
+        message: 'Henüz hiç ders tamamlanmadı. İlk kullanım desteği gerekebilir.'});
+    }
+  }
+  return out;
+}
+
+/* --- Ayarlar --------------------------------------------------------------- */
+SCREENS.settings = () => {
+  const s = S.settings, p = PROVIDERS[s.provider];
+  const missing = p.key && !s.apiKey && !s.useProxy;
+  const child = activeChild();
+
+  const bn = missing
+    ? ['#EF4444','⛔','Kurulum tamamlanmadı',
+       `${p.label} seçili ancak API anahtarı girilmemiş. Dersler çevrimdışı çalışıyor.`]
+    : s.provider === 'offline'
+      ? ['#F59E0B','📴','Çevrimdışı mod',
+         'Tüm dersler çevrimdışı çalışıyor. Serbest sohbet için bir sağlayıcı seçin.']
+      : ['#22C55E','✓','Bağlantı hazır', `${p.label} yapılandırıldı.`];
+
+  const keySub = s.provider === 'offline' ? 'Çevrimdışı modda gerekmez'
+    : s.useProxy ? 'Sunucu üzerinden yönetiliyor'
+    : s.apiKey ? maskKey(s.apiKey) : 'Tanımlı değil';
+
+  const rec = Speech.supportsRecognition();
+
+  return `<div class="appbar">
+    ${S.shell ? '' : '<button class="ibtn" onclick="back()">←</button>'}<h2>Ayarlar</h2></div>
+  <div style="padding:0 16px 20px">
+    <div class="banner" style="background:${bn[0]}14;border:1px solid ${bn[0]}47">
+      <span style="color:${bn[0]};font-size:17px">${bn[1]}</span>
+      <div><div style="font-size:14.5px;font-weight:800;color:${bn[0]}">${bn[2]}</div>
+        <p style="font-size:13px;line-height:1.45;margin-top:4px">${bn[3]}</p></div></div>
+
+    <div class="banner" style="margin-top:12px;background:${rec ? 'rgba(34,197,94,.1)' : 'rgba(245,158,11,.1)'};
+      border:1px solid ${rec ? 'rgba(34,197,94,.3)' : 'rgba(245,158,11,.3)'}">
+      <span style="font-size:17px">${rec ? '🎤' : '⌨️'}</span>
+      <div><div style="font-size:14.5px;font-weight:800">${rec ? 'Sesli cevap destekleniyor' : 'Yazılı cevap modu'}</div>
+        <p style="font-size:12.5px;line-height:1.45;margin-top:4px">${rec
+          ? 'Bu tarayıcı Türkçe konuşma tanımayı destekliyor. Derslerde mikrofonla cevap verebilirsin.'
+          : 'Bu tarayıcı konuşma tanımayı desteklemiyor (Chrome veya Edge deneyin). Derslerde cevabını yazabilirsin.'}</p></div></div>
+
+    <p class="slabel" style="margin-top:20px">Yapay Zeka</p>
+    <div class="sgroup">
+      ${stile('☁️','var(--brand)','Servis sağlayıcı',p.label,"go('aiset')")}
+      ${stile('🔑','var(--grape)','API anahtarı',keySub,"go('aiset')",missing)}
+    </div>
+
+    <p class="slabel" style="margin-top:20px">Çocuk Profili</p>
+    <div class="sgroup">
+      ${stile('🙂','var(--mint)','Aktif profil',
+        `${child.avatar}  ${esc(child.name)} · ${ageLabel(child.ageMonths)}`,'pickChild()')}
+      ${stile('🔊','var(--sky)','Ses ve seans ayarları',
+        `Hız ${rateLabel(s.rate)} · Seans ${s.limit} dk`,"go('speechset')")}
+    </div>
+
+    <p class="slabel" style="margin-top:20px">Güvenlik</p>
+    <div class="sgroup">
+      ${stile('👨‍👩‍👧','var(--mint)','Veli PIN',
+        S.pins.parent ? 'Tanımlı · değiştirmek için dokun' : 'Tanımlı değil',"setPin('parent')")}
+      ${stile('🎓','var(--grape)','Öğretmen PIN',
+        S.pins.teacher ? 'Tanımlı · değiştirmek için dokun' : 'Tanımlı değil',"setPin('teacher')")}
+    </div>
+
+    <p class="slabel" style="margin-top:20px">Gizlilik</p>
+    <div class="sgroup">
+      ${swtile('🛡️','var(--success)','Kişisel veri filtresi',
+        'Telefon, adres ve kimlik bilgileri buluta gönderilmeden maskelenir',s.redact,'redact')}
+      ${swtile('🕘','var(--warning)','Konuşma dökümünü sakla',
+        'Kapatılırsa yalnızca sayısal metrikler kaydedilir',s.store,'store')}
+      ${stile('🗑️','var(--danger)','İlerlemeyi sıfırla',
+        `${esc(child.name)} için tüm ders kayıtları silinir`,'resetProgress()',false,'var(--danger)')}
+      ${stile('💣','var(--danger)','Her şeyi sıfırla',
+        'Tüm profiller, ayarlar ve PIN kayıtları silinir','resetAll()',false,'var(--danger)')}
+    </div>
+
+    <p class="slabel" style="margin-top:20px">Uygulama</p>
+    <div class="sgroup">
+      ${stile('🔀','var(--ink-soft)','Rol değiştir','Çocuk, veli, öğretmen veya uzman',"go('login')")}
+      ${stile('📚','var(--ink-soft)','İçerik havuzu',
+        `${DialogueEngine.combinationCount().toLocaleString('tr-TR')} benzersiz alıştırma · ${UNITS.length} ünite · ${ALL_LESSONS.length} ders`,'')}
+      ${stile('ℹ️','var(--ink-soft)','Sürüm','0.9.0 (beta)','')}
+    </div>
+
+    <p class="sub" style="text-align:center;font-size:11.5px;line-height:1.5;margin-top:20px">
+      Talk Buddy bir tanı aracı değildir ve uzman değerlendirmesinin yerini almaz.<br>
+      Demo verileri yalnızca bu tarayıcıda tutulur.</p>
+  </div>`;
+};
+
+SCREENS.aiset = () => {
+  const s = S.settings, p = PROVIDERS[s.provider];
+  return `<div class="appbar"><button class="ibtn" onclick="back()">←</button>
+    <h2>Yapay Zeka Servisi</h2></div>
+  <div style="padding:0 16px 20px">
+    <div class="banner" style="background:var(--brand-soft);margin-bottom:16px">
+      <span>ℹ️</span>
+      <p style="font-size:12.5px;line-height:1.5">Ders motoru yapay zekadan bağımsızdır.
+        ${DialogueEngine.combinationCount().toLocaleString('tr-TR')} alıştırmanın tamamı çevrimdışı üretilir.
+        Yapay zeka yalnızca serbest sohbet ve seans özetlerinde kullanılır.</p></div>
+
+    <p class="slabel">Servis sağlayıcı</p>
+    ${Object.keys(PROVIDERS).map(id => {
+      const q = PROVIDERS[id], sel = id === s.provider;
+      return `<button class="pcard ${sel ? 'sel' : ''}" onclick="setProvider('${id}')">
+        <span class="sicon" style="background:${q.color}24;color:${q.color}">${q.icon}</span>
+        <span class="grow" style="text-align:left">
+          <span style="display:block;font-size:15px;font-weight:800">${q.label}</span>
+          <span class="sub" style="display:block;margin-top:3px;line-height:1.4">${q.desc}</span></span>
+        <span style="font-size:19px;color:${sel ? 'var(--brand)' : 'var(--line)'}">${sel ? '◉' : '○'}</span></button>`;
+    }).join('')}
+
+    ${!p.key ? '' : `
+    <p class="slabel" style="margin-top:20px">Bağlantı yöntemi</p>
+    <div class="sgroup">
+      ${swtile('🖥️','var(--grape)','Kendi sunucum üzerinden bağlan',
+        'Anahtar cihazda tutulmaz. Yayına çıkarken önerilir.',s.useProxy,'useProxy')}
+    </div>
+    <div style="margin-top:16px">
+    ${s.useProxy ? `
+      <p style="font-size:13.5px;font-weight:700;margin:0 0 8px 6px">Sunucu adresi</p>
+      <input class="inp" type="url" inputmode="url" placeholder="https://api.alanadiniz.com/v1"
+        value="${esc(s.proxyUrl)}" oninput="setField('proxyUrl',this.value)">`
+    : `
+      <p style="font-size:13.5px;font-weight:700;margin:0 0 8px 6px">${p.label} API anahtarı</p>
+      <div style="position:relative">
+        <input class="inp" id="keyin" type="${S.showKey ? 'text' : 'password'}" autocomplete="off"
+          autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="${p.hint}"
+          style="padding-right:52px" value="${esc(s.apiKey)}" oninput="setField('apiKey',this.value)">
+        <button class="ibtn" style="position:absolute;right:5px;top:6px" onclick="toggleKey()">${S.showKey ? '🙈' : '👁️'}</button>
+      </div>
+      <div class="row" style="gap:6px;margin-top:10px">
+        <span class="sub grow" style="font-size:12.5px">Anahtar: ${p.url}</span>
+        <button class="ibtn" style="width:auto;padding:0 10px;font-size:13px;color:var(--brand);font-weight:700"
+          onclick="copyText('${p.url}')">Kopyala</button></div>`}
+    </div>
+    <button class="btn" style="margin-top:16px" id="testbtn" onclick="testConn()">📡 Bağlantıyı test et</button>
+    <div id="testout"></div>
+    ${s.apiKey && !s.useProxy ? `<button class="btn danger" style="margin-top:10px" onclick="clearKey()">
+      🗑️ Kayıtlı anahtarı sil</button>` : ''}`}
+  </div>`;
+};
+
+SCREENS.speechset = () => {
+  const s = S.settings;
+  return `<div class="appbar"><button class="ibtn" onclick="back()">←</button>
+    <h2>Ses ve Seans</h2></div>
+  <div style="padding:0 16px 20px">
+    <p class="slabel">Buddy sesi</p>
+    <div class="card">
+      ${slider('Konuşma hızı',rateLabel(s.rate),s.rate,.25,.75,.05,'rate')}
+      <div style="height:1px;background:var(--line);margin:10px 0"></div>
+      ${slider('Ses tonu',pitchLabel(s.pitch),s.pitch,.8,1.6,.1,'pitch')}
+      <button class="btn ghost" style="margin-top:14px" onclick="previewVoice()">▶ Sesi dinle</button>
+    </div>
+
+    <p class="slabel" style="margin-top:22px">Ders</p>
+    <div class="card">
+      ${slider('Seans süre sınırı',s.limit+' dakika',s.limit,3,20,1,'limit')}
+      <div style="height:1px;background:var(--line);margin:10px 0"></div>
+      ${slider('Sessizlik toleransı',s.silence+' saniye',s.silence,3,12,1,'silence')}
+      <p class="sub" style="font-size:12px;line-height:1.4;margin-top:8px">
+        Çocuk bu süre boyunca sessiz kalırsa Buddy sorusunu yeniden sorar.</p></div>
+
+    <p class="slabel" style="margin-top:22px">Mikrofon</p>
+    <div class="sgroup">
+      ${stile('🎙️','var(--ink-soft)','Konuşma tanıma',
+        Speech.supportsRecognition()
+          ? (Speech.state.micGranted === true ? 'Hazır ve izinli'
+            : Speech.state.micGranted === false ? 'İzin verilmedi' : 'Test etmek için dokun')
+          : 'Bu tarayıcı desteklemiyor','checkMic()')}
+    </div>
+    <p class="sub" style="font-size:12px;line-height:1.5;margin-top:10px;padding:0 6px">
+      Uygulamada konuşma tanıma cihaz üzerinde çalışır; ses kaydı sunucuya gönderilmez.
+      Bu tarayıcı demosunda Web Speech API kullanılır.</p>
+  </div>`;
+};
+
+/* --- Ayar bileşenleri ------------------------------------------------------ */
+function stile(icon, color, title, sub, action, dot, titleColor) {
+  return `<button class="stile" ${action ? `onclick="${action}"` : 'style="cursor:default"'}>
+    <span class="sicon" style="background:${color}1F;color:${color}">${icon}</span>
+    <span class="grow" style="text-align:left">
+      <span class="stitle" ${titleColor ? `style="color:${titleColor}"` : ''}>${title}</span>
+      ${sub ? `<span class="ssub">${sub}</span>` : ''}</span>
+    ${dot ? '<span style="width:9px;height:9px;border-radius:50%;background:var(--danger);flex-shrink:0"></span>' : ''}
+    ${action ? '<span style="color:var(--ink-soft)">›</span>' : ''}</button>`;
+}
+
+function swtile(icon, color, title, sub, val, field) {
+  return `<div class="stile" style="cursor:default">
+    <span class="sicon" style="background:${color}1F;color:${color}">${icon}</span>
+    <span class="grow" style="text-align:left">
+      <span class="stitle">${title}</span><span class="ssub">${sub}</span></span>
+    <button class="sw ${val ? 'on' : ''}" onclick="toggleField('${field}')"></button></div>`;
+}
+
+function slider(label, valueLabel, value, min, max, step, field) {
+  return `<div>
+    <div class="row between">
+      <span style="font-size:14px;font-weight:700">${label}</span>
+      <span style="font-size:13px;font-weight:800;color:var(--brand)">${valueLabel}</span></div>
+    <input class="rng" type="range" min="${min}" max="${max}" step="${step}" value="${value}"
+      oninput="setNum('${field}',this.value)"></div>`;
+}
+
+/* ===========================================================================
+   Talk Buddy — Navigasyon, kabuk, eylemler
+   =========================================================================== */
+
+const SHELLS = {
+  child: {screens:['path','sounds','rewards'],
+    tabs:[['🗺️','Öğren'],['🔤','Sesler'],['⭐','Rozetler']], bg:'#F2F4FF'},
+  parent: {screens:['parent','history','settings'],
+    tabs:[['📊','Panel'],['📄','Dersler'],['⚙️','Ayarlar']], bg:'var(--canvas)'},
+  teacher: {screens:['teacher','specialist','settings'],
+    tabs:[['👥','Sınıfım'],['📈','Analiz'],['⚙️','Ayarlar']], bg:'var(--canvas)'},
+  specialist: {screens:['specialist','alerts','settings'],
+    tabs:[['🩺','Danışanlar'],['🔔','Uyarılar'],['⚙️','Ayarlar']], bg:'var(--canvas)'},
+};
+
+const FULLSCREEN = ['login','lesson','lessonDone','aiset','speechset','student'];
+const history = [];
+
+function shellOf(screen) {
+  for (const k in SHELLS) if (SHELLS[k].screens[0] === screen) return k;
+  return null;
+}
+
+function go(screen, noPush) {
+  if (!SCREENS[screen]) return;
+  if (!noPush && S.screen !== screen) {
+    history.push({s: S.screen, sh: S.shell, tab: S.tab});
+    if (history.length > 30) history.shift();
+  }
+
+  const owner = shellOf(screen);
+  if (owner) { S.shell = owner; S.tab = 0; }
+  else if (S.shell && SHELLS[S.shell].screens.includes(screen)) {
+    S.tab = SHELLS[S.shell].screens.indexOf(screen);
+  } else if (FULLSCREEN.includes(screen)) {
+    if (screen === 'login') S.shell = null;
+  }
+
+  S.screen = screen;
+  render();
+}
+
+function back() {
+  const h = history.pop();
+  if (h && SCREENS[h.s]) { S.screen = h.s; S.shell = h.sh; S.tab = h.tab; render(); }
+  else go('login', true);
+}
+
+function tabTo(i) {
+  if (!S.shell) return;
+  S.tab = i;
+  S.screen = SHELLS[S.shell].screens[i];
+  render();
+}
+
+/* --- Rol geçişleri --------------------------------------------------------- */
+function enterRole(role) {
+  S.role = role;
+  if (role === 'child') { S.shell = 'child'; go('path'); return; }
+  if (role === 'specialist') { S.shell = 'specialist'; go('specialist'); return; }
+
+  const target = role === 'teacher' ? 'teacher' : 'parent';
+  if (!S.pins[role]) {
+    setPin(role, () => { S.shell = role; go(target); });
+    return;
+  }
+  gate(role, () => { S.shell = role; go(target); });
+}
+
+function gate(role, onOk) {
+  if (!S.pins[role]) {
+    if (role === 'parent' || role === 'teacher') {
+      setPin(role, onOk || (() => { S.shell = role; go(role === 'teacher' ? 'teacher' : 'parent'); }));
+      return;
+    }
+  }
+  const a = 6 + Math.floor(Math.random() * 7), b = 6 + Math.floor(Math.random() * 7);
+  showModal({
+    title: (role === 'teacher' ? 'Öğretmen' : 'Veli') + ' Girişi',
+    body: `<p style="font-size:13.5px;line-height:1.45">4 haneli PIN'inizi girin.</p>
+      <input class="inp pin" id="pinin" type="password" inputmode="numeric" maxlength="4"
+        placeholder="••••" autofocus>
+      <p class="sub" style="font-size:11.5px;margin-top:10px">
+        PIN'i unuttuysanız Ayarlar → Güvenlik bölümünden sıfırlayabilirsiniz.</p>
+      <p id="pinerr" style="color:var(--danger);font-size:12.5px;font-weight:600;margin-top:8px"></p>`,
+    okLabel: 'Giriş',
+    onOk: () => {
+      const v = (document.getElementById('pinin') || {}).value || '';
+      if (v === S.pins[role]) {
+        closeModal();
+        (onOk || (() => { S.shell = role; go(role === 'teacher' ? 'teacher' : 'parent'); }))();
+      } else {
+        const e = document.getElementById('pinerr');
+        if (e) e.textContent = 'PIN yanlış, tekrar deneyin';
+        const i = document.getElementById('pinin');
+        if (i) { i.value = ''; i.focus(); }
+      }
+      return false;
+    },
+  });
+}
+
+function setPin(role, onDone) {
+  showModal({
+    title: (role === 'teacher' ? 'Öğretmen' : 'Veli') + ' PIN oluştur',
+    body: `<p style="font-size:13.5px;line-height:1.45">4 haneli bir PIN belirleyin.
+        Bu PIN yalnızca bu tarayıcıda saklanır ve çocuğun panele girmesini engeller.</p>
+      <input class="inp pin" id="pin1" type="password" inputmode="numeric" maxlength="4"
+        placeholder="Yeni PIN" autofocus>
+      <input class="inp pin" id="pin2" type="password" inputmode="numeric" maxlength="4"
+        placeholder="PIN tekrar" style="margin-top:10px">
+      <p id="pinerr" style="color:var(--danger);font-size:12.5px;font-weight:600;margin-top:8px"></p>`,
+    okLabel: 'Kaydet',
+    onOk: () => {
+      const a = (document.getElementById('pin1') || {}).value || '';
+      const b = (document.getElementById('pin2') || {}).value || '';
+      const err = document.getElementById('pinerr');
+      if (a.length !== 4) { if (err) err.textContent = 'PIN 4 haneli olmalı'; return false; }
+      if (a !== b) { if (err) err.textContent = 'İki PIN aynı değil'; return false; }
+      S.pins[role] = a;
+      savePrefs();
+      closeModal();
+      toast('PIN kaydedildi');
+      if (onDone) onDone(); else render();
+      return false;
+    },
+  });
+}
+
+function pickChild() {
+  showSheet('Kim çalışacak?', CHILDREN.map(c => {
+    const p = progressOf(c.id);
+    return {
+      html: `<span style="font-size:24px">${c.avatar}</span>
+        <span class="grow" style="text-align:left">
+          <span style="display:block;font-size:15px;font-weight:700">${esc(c.name)}</span>
+          <span class="sub" style="display:block;font-size:12px">${ageLabel(c.ageMonths)} ·
+            %${Math.round(overallCompletion(p)*100)} · ⭐ ${p.totalStars}</span></span>
+        ${c.id === S.activeChildId ? '<span style="color:var(--brand)">✓</span>' : ''}`,
+      action: () => { S.activeChildId = c.id; savePrefs(); closeSheet(); render(); toast(c.name + ' seçildi'); },
+    };
+  }));
+}
+
+function switchToStudent(id) {
+  S.activeChildId = id;
+  savePrefs();
+  S.shell = 'child';
+  go('path');
+  toast(activeChild().name + ' olarak giriş yapıldı');
+}
+
+const openStudent = id => { S.studentId = id; go('student'); };
+
+/* --- Ders eylemleri -------------------------------------------------------- */
+async function startLesson(id) {
+  S.lesson = new LessonSession(id);
+  go('lesson');
+  await S.lesson.start();
+}
+
+function quitLesson() {
+  const s = S.lesson;
+  if (!s) { go('path'); return; }
+  if (!s.results.length) { s.abandon(); go('path'); return; }
+  showModal({
+    title: 'Dersten çıkalım mı?',
+    body: `<p style="font-size:13.5px;line-height:1.5">Şimdiye kadarki çalışman kaydedilecek.
+      İstediğin zaman kaldığın yerden devam edebilirsin.</p>`,
+    okLabel: 'Çık',
+    cancelLabel: 'Devam et',
+    onOk: () => {
+      const result = s.buildResult();
+      s.abandon();
+      S.lessonResult = result;
+      closeModal();
+      go('lessonDone');
+      return false;
+    },
+  });
+}
+
+const startListen = () => S.lesson && S.lesson.listen();
+const pickOption = i => S.lesson && S.lesson.submitChoice(i);
+const skipExercise = () => S.lesson && S.lesson.skip();
+
+function repeatPrompt() {
+  const s = S.lesson;
+  if (!s) return;
+  const ex = s.current;
+  Speech.speak(ex ? ex.prompt : (s.banner || ''));
+}
+
+function submitTyped() {
+  const el = document.getElementById('answerin');
+  if (!el || !S.lesson) return;
+  const v = el.value.trim();
+  if (!v) return;
+  el.value = '';
+  S.lesson.submitSpeech(v, 0.92);
+}
+
+async function retryMic() {
+  const ok = await Speech.requestMic();
+  if (ok && S.lesson) {
+    S.lesson.voiceMode = 'voice';
+    S.lesson.phase = 'awaiting';
+    render();
+    S.lesson.listen();
+  } else {
+    toast('Mikrofon izni verilmedi');
+  }
+}
+
+function useTextMode() {
+  if (!S.lesson) return;
+  S.lesson.voiceMode = 'text';
+  S.lesson.phase = 'awaiting';
+  render();
+}
+
+/* --- Ayar eylemleri -------------------------------------------------------- */
+function setField(f, v) { S.settings[f] = v; savePrefs(); }
+function setNum(f, v) {
+  S.settings[f] = parseFloat(v);
+  Speech.applySettings(S.settings);
+  savePrefs();
+  scheduleRender();
+}
+function toggleField(f) { S.settings[f] = !S.settings[f]; savePrefs(); render(); }
+function setProvider(id) { S.settings.provider = id; savePrefs(); render(); }
+function toggleKey() { S.showKey = !S.showKey; render(); }
+
+let renderTimer = null;
+function scheduleRender() {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(() => render(true), 350);
+}
+
+function clearKey() {
+  S.settings.apiKey = '';
+  S.settings.provider = 'offline';
+  savePrefs(); render(); toast('Anahtar silindi');
+}
+
+function resetProgress() {
+  const c = activeChild();
+  showModal({
+    title: 'İlerlemeyi sıfırla',
+    body: `<p style="font-size:13.5px;line-height:1.5">${esc(c.name)} için tüm ders kayıtları,
+      yıldızlar ve ses ustalıkları silinecek. Bu işlem geri alınamaz.</p>`,
+    okLabel: 'Sıfırla', danger: true,
+    onOk: () => { ProgressStore.clear(c.id); closeModal(); render(); toast('İlerleme sıfırlandı'); return false; },
+  });
+}
+
+function resetAll() {
+  showModal({
+    title: 'Her şeyi sıfırla',
+    body: `<p style="font-size:13.5px;line-height:1.5">Tüm profillerin ilerlemesi, ayarlar
+      ve PIN'ler silinecek. Bu işlem geri alınamaz.</p>`,
+    okLabel: 'Sıfırla', danger: true,
+    onOk: () => {
+      CHILDREN.forEach(c => ProgressStore.clear(c.id));
+      try { localStorage.removeItem('tb_prefs'); localStorage.removeItem('tb_pins');
+            localStorage.removeItem('tb_active_child'); } catch (e) {}
+      S.pins = {parent: null, teacher: null};
+      S.settings = {provider:'offline', apiKey:'', useProxy:false, proxyUrl:'',
+        rate:0.44, pitch:1.18, limit:12, silence:6, redact:true, store:true, voiceMode:'auto'};
+      S.activeChildId = 'c1';
+      closeModal(); go('login'); toast('Her şey sıfırlandı');
+      return false;
+    },
+  });
+}
+
+function testConn() {
+  const s = S.settings;
+  const btn = document.getElementById('testbtn');
+  const out = document.getElementById('testout');
+  if (!btn || !out) return;
+  btn.textContent = '⏳ Deneniyor...'; btn.disabled = true;
+  setTimeout(() => {
+    const ok = s.useProxy ? !!s.proxyUrl.trim() : s.apiKey.trim().length > 12;
+    const msg = ok ? 'Bağlantı başarılı.'
+      : (s.useProxy ? 'Sunucu adresi girilmemiş.' : 'API anahtarı geçersiz veya eksik.');
+    const c = ok ? '#22C55E' : '#EF4444';
+    out.innerHTML = `<div style="margin-top:14px;background:${c}14;border:1px solid ${c}4D;
+      border-radius:var(--r-md);padding:14px;display:flex;gap:10px">
+      <span style="color:${c}">${ok ? '✓' : '⛔'}</span>
+      <div><div style="font-size:14px;font-weight:800;color:${c}">${ok ? 'Başarılı' : 'Başarısız'}</div>
+        <p style="font-size:12.5px;line-height:1.45;margin-top:3px">${msg}</p>
+        ${ok ? '<p class="sub" style="font-size:11.5px;margin-top:4px">Yanıt süresi: 412 ms (demo)</p>' : ''}</div></div>`;
+    btn.textContent = '📡 Bağlantıyı test et'; btn.disabled = false;
+  }, 850);
+}
+
+function previewVoice() {
+  Speech.applySettings(S.settings);
+  Speech.speak('Merhaba! Ben Buddy. Sesim böyle çıkıyor, beğendin mi?');
+  toast('Buddy konuşuyor...');
+}
+
+async function checkMic() {
+  if (!Speech.supportsRecognition()) {
+    toast('Bu tarayıcı konuşma tanımayı desteklemiyor');
+    return;
+  }
+  const ok = await Speech.requestMic();
+  toast(ok ? '✓ Mikrofon hazır' : '⛔ Mikrofon izni verilmedi');
+  render();
+}
+
+function copyText(t) {
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast('Kopyalandı'));
+  else toast(t);
+}
+
+/* --- Modal / sheet / toast -------------------------------------------------- */
+let modalState = null;
+
+function showModal(cfg) {
+  modalState = cfg;
+  const el = document.getElementById('modal');
+  el.innerHTML = `<div class="mbox">
+    <h3>${cfg.title}</h3>
+    <div class="mbody">${cfg.body}</div>
+    <div class="mact">
+      <button class="mbtn" onclick="closeModal()">${cfg.cancelLabel || 'Vazgeç'}</button>
+      <button class="mbtn primary ${cfg.danger ? 'danger' : ''}" onclick="modalOk()">${cfg.okLabel || 'Tamam'}</button>
+    </div></div>`;
+  el.classList.add('show');
+  setTimeout(() => {
+    const f = el.querySelector('input[autofocus], input');
+    if (f) f.focus();
+  }, 60);
+}
+
+function modalOk() {
+  if (modalState && modalState.onOk) {
+    const close = modalState.onOk();
+    if (close !== false) closeModal();
+  } else closeModal();
+}
+
+function closeModal() {
+  modalState = null;
+  const el = document.getElementById('modal');
+  el.classList.remove('show');
+  el.innerHTML = '';
+}
+
+let sheetActions = [];
+
+function showSheet(title, items) {
+  sheetActions = items.map(i => i.action);
+  const el = document.getElementById('sheet');
+  el.innerHTML = `<div class="sbox">
+    <div class="shandle"></div>
+    <h3>${title}</h3>
+    ${items.map((it, i) => `<button class="sitem" onclick="sheetAct(${i})">${it.html}</button>`).join('')}
+    <button class="mbtn" style="width:100%;margin-top:10px" onclick="closeSheet()">Kapat</button>
+  </div>`;
+  el.classList.add('show');
+}
+
+const sheetAct = i => sheetActions[i] && sheetActions[i]();
+
+function closeSheet() {
+  const el = document.getElementById('sheet');
+  el.classList.remove('show');
+  el.innerHTML = '';
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1900);
+}
+
+/* --- Render ---------------------------------------------------------------- */
+const CAPTIONS = {
+  login:'Giriş — rol seçimi, PIN korumalı veli ve öğretmen',
+  path:'Öğrenme yolu — 11 ünite, 33 ders, kilitli ilerleme',
+  lesson:'Ders akışı — sesli soru, sesli cevap, canlı değerlendirme',
+  lessonDone:'Ders sonu — yıldızlar, aileye not, ses süreçleri',
+  sounds:'Ses haritası — edinim sırasına göre ustalık',
+  rewards:'Rozetler — gerçek ilerlemeye bağlı',
+  parent:'Veli paneli — ünite ilerlemesi ve ses ustalığı',
+  history:'Ders geçmişi — tamamlanan dersler',
+  teacher:'Öğretmen paneli — sınıf bazlı öğrenci listesi',
+  student:'Öğrenci detayı — ustalık haritası, ünite durumu',
+  specialist:'Uzman paneli — risk sıralı danışan listesi',
+  alerts:'Uyarılar — ilerlemeden otomatik üretilir',
+  settings:'Ayarlar — servis, profil, güvenlik, gizlilik',
+  aiset:'Yapay zeka servisi — sağlayıcı ve API anahtarı',
+  speechset:'Ses ve ders ayarları',
+};
+
+const NOTES = {
+  login:[['PIN koruması','Veli ve öğretmen ilk girişte 4 haneli PIN oluşturur. Çocuk doğrudan girer.']],
+  path:[['Kilitli ilerleme','Ünite ve dersler sırayla açılır. Sıra Türkçe fonolojik edinim sırasına göre: p,b,m → t,d,n → k,g → f,v,s,z → l → ş,ç,c → r.'],
+        ['Gerçek veri','Yıldız, seri ve yüzde localStorage\'da tutulur; ders bitirdikçe artar.']],
+  lesson:[['Gerçek ses','Chrome/Edge\'de mikrofonla konuşabilirsiniz. Desteklenmeyen tarayıcıda yazılı kutu çıkar.'],
+          ['Hatasız öğrenme','Can yok. 1. hatada yavaş model, 2. hatada ilk hece ipucu, 3. denemede kabul edip ilerler.'],
+          ['Fonolojik tolerans','"kedi" yerine "tedi" derseniz GEÇER — gelişimsel öne alma olarak tanınır ve uzmana raporlanır.']],
+  lessonDone:[['Ses süreçleri','Tespit edilen gelişimsel süreçler ve tipik düzelme yaşları listelenir.']],
+  sounds:[['Edinim sırası','20 ses Türkçede öğrenilme yaşına göre dizili. Yaşa göre erken olanlar soluk gösterilir.']],
+  parent:[['Canlı veri','Panel çocuğun gerçek ders kayıtlarından beslenir. Ders yapmadan boş görünür.']],
+  teacher:[['Sınıf bazlı','İki sınıf, beş öğrenci. Her öğrencinin ilerlemesi ayrı saklanır.'],
+           ['Rol geçişi','Öğrenci detayında "bu öğrenci olarak derse gir" ile profil değişir.']],
+  specialist:[['Otomatik uyarı','Uyarılar sabit değil — ustalık skorları ve yaş normlarından üretilir.']],
+  settings:[['Sıfırlama','Demoyu baştan denemek için "Her şeyi sıfırla" kullanın.']],
+};
+
+function render(keepScroll) {
+  const view = document.getElementById('view');
+  const nav = document.getElementById('nav');
+  const app = document.getElementById('app');
+  const scroll = keepScroll ? view.scrollTop : 0;
+
+  const active = document.activeElement;
+  const activeId = active && active.id;
+  const caret = active && active.selectionStart;
+
+  view.innerHTML = SCREENS[S.screen] ? SCREENS[S.screen]() : '';
+
+  const inShell = S.shell && SHELLS[S.shell].screens.includes(S.screen)
+                  && !FULLSCREEN.includes(S.screen);
+
+  if (inShell) {
+    const sh = SHELLS[S.shell];
+    app.style.background = sh.bg;
+    nav.className = '';
+    nav.innerHTML = sh.tabs.map((t, i) => `<button class="${i === S.tab ? 'on' : ''}"
+      onclick="tabTo(${i})"><span class="ni">${t[0]}</span><span class="nl">${t[1]}</span></button>`).join('');
+  } else {
+    nav.className = 'hide';
+    nav.innerHTML = '';
+    app.style.background = ['path','sounds','rewards','lesson','lessonDone','login']
+      .includes(S.screen) ? '#F2F4FF' : 'var(--canvas)';
+  }
+
+  view.scrollTop = scroll;
+
+  if (activeId) {
+    const el = document.getElementById(activeId);
+    if (el) { el.focus(); try { el.setSelectionRange(caret, caret); } catch (e) {} }
+  }
+
+  const cap = document.getElementById('caption');
+  if (cap) cap.textContent = CAPTIONS[S.screen] || '';
+  const notes = document.getElementById('notes');
+  if (notes) {
+    notes.innerHTML = (NOTES[S.screen] || [])
+      .map(n => `<div class="note"><h4>${n[0]}</h4><p>${n[1]}</p></div>`).join('');
+  }
+  document.querySelectorAll('#navlist button').forEach(b =>
+    b.classList.toggle('on', b.dataset.s === S.screen));
+
+  bindMicWave();
+}
+
+/* Mikrofon dalgasını canlı seviyeye bağla (render'dan bağımsız, akıcı) */
+function bindMicWave() {
+  Speech.onLevel = (lvl) => {
+    const wave = document.getElementById('micwave');
+    if (!wave) return;
+    const active = S.lesson && S.lesson.phase === 'listening';
+    wave.querySelectorAll('i').forEach(bar => {
+      const m = parseFloat(bar.dataset.m || '0.5');
+      bar.style.height = (active ? 6 + lvl * 28 * m : 6) + 'px';
+    });
+  };
+}
+
+/* --- Masaüstü menüsü ------------------------------------------------------- */
+const MENU = [
+  ['Giriş', [['login','🚪','Rol Seçimi']]],
+  ['Çocuk', [['path','🗺️','Öğrenme Yolu'],['sounds','🔤','Ses Haritam'],['rewards','⭐','Rozetler']]],
+  ['Veli', [['parent','📊','Panel'],['history','📄','Ders Geçmişi']]],
+  ['Öğretmen', [['teacher','👥','Sınıfım'],['student','🔬','Öğrenci Detayı']]],
+  ['Uzman', [['specialist','🩺','Danışanlar'],['alerts','🔔','Uyarılar']]],
+  ['Ayarlar', [['settings','⚙️','Genel'],['aiset','🔑','Yapay Zeka'],['speechset','🔊','Ses ve Ders']]],
+];
+
+function buildMenu() {
+  const el = document.getElementById('navlist');
+  if (!el) return;
+  el.innerHTML = MENU.map(g => `<p class="nav-title">${g[0]}</p>` +
+    g[1].map(i => `<button data-s="${i[0]}"><span class="ico">${i[1]}</span>${i[2]}</button>`).join('')
+  ).join('');
+  el.querySelectorAll('button').forEach(b =>
+    b.addEventListener('click', () => {
+      if (b.dataset.s === 'lesson') { startLesson(nextLesson(activeProgress()) ? nextLesson(activeProgress()).id : 'u1l1'); return; }
+      go(b.dataset.s);
+    }));
+}
+
+/* --- Yerleşim -------------------------------------------------------------- */
+function isMobile() {
+  const touch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  const narrow = Math.min(window.innerWidth, window.innerHeight) < 560;
+  const ua = /Android|iPhone|iPad|iPod|Mobile|Windows Phone/i.test(navigator.userAgent);
+  return (touch && narrow) || (ua && narrow) || window.innerWidth < 560;
+}
+
+function applyLayout() {
+  const mobile = isMobile();
+  document.body.classList.toggle('mobile', mobile);
+  const host = document.getElementById('phone-host');
+  const slot = document.getElementById('phone-host-desk');
+  if (mobile) {
+    if (host.parentNode !== document.body) document.body.appendChild(host);
+    host.style.cssText = '';
+  } else {
+    if (host.parentNode !== slot) slot.appendChild(host);
+    host.style.cssText = 'width:100%;height:100%';
+  }
+}
+
+let rzTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(rzTimer);
+  rzTimer = setTimeout(() => { applyLayout(); render(true); }, 150);
+});
+
+let lastTouch = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTouch < 320) e.preventDefault();
+  lastTouch = now;
+}, {passive: false});
+
+/* --- Başlat ---------------------------------------------------------------- */
+loadPrefs();
+Speech.applySettings(S.settings);
+buildMenu();
+applyLayout();
+go('login', true);
+
+</script>
+</body>
+</html>

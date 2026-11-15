@@ -1,0 +1,7 @@
+# Bu dosyayi local.properties olarak kopyalayin ve yollari kendi
+# makinenize gore duzenleyin. local.properties git'e eklenmez.
+sdk.dir=C\:\\Users\\KULLANICI\\AppData\\Local\\Android\\sdk
+flutter.sdk=C\:\\src\\flutter
+flutter.buildMode=release
+flutter.versionName=0.9.0
+flutter.versionCode=1
